@@ -1,0 +1,112 @@
+/* ── Page transitions (Vue Router) ──────────────────────────────────────── */
+
+.page-enter-active {
+  transition: opacity 0.25s ease-out, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-leave-active {
+  transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+  /* pointer-events: none ป้องกัน click ระหว่าง leave animation */
+  pointer-events: none;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* ── Modal premium transitions ───────────────────────────────────────────── */
+
+.modal-premium-enter-active,
+.modal-premium-leave-active {
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.modal-premium-enter-from,
+.modal-premium-leave-to {
+  opacity: 0;
+  transform: scale(1.02);
+}
+
+.modal-premium-enter-active .backdrop-blur-sm,
+.modal-premium-leave-active .backdrop-blur-sm {
+  transition: opacity 0.3s ease;
+}
+
+.modal-premium-enter-from .backdrop-blur-sm,
+.modal-premium-leave-to .backdrop-blur-sm {
+  opacity: 0;
+}
+
+/* ── Confirm modal — spring scale ────────────────────────────────────────── */
+
+.confirm-enter-active {
+  animation: modal-spring-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.confirm-leave-active {
+  animation: modal-spring-out 180ms ease-in both;
+  pointer-events: none;
+}
+
+/* backdrop แยก transition จาก modal card */
+.confirm-enter-active > .absolute,
+.confirm-leave-active > .absolute {
+  transition: opacity 0.2s ease;
+}
+.confirm-enter-from > .absolute,
+.confirm-leave-to   > .absolute {
+  opacity: 0;
+}
+
+/* ── Toast TransitionGroup ────────────────────────────────────────────────── */
+/* ใช้ใน ToastContainer แบบ scoped ไว้แล้ว — ไม่ต้อง duplicate */
+
+/* ── Collapse height (sidebar section toggle) ─────────────────────────────── */
+.collapse-enter-active,
+.collapse-leave-active {
+  transition: max-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity    200ms ease;
+  overflow: hidden;
+}
+.collapse-enter-from,
+.collapse-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.collapse-enter-to,
+.collapse-leave-from {
+  max-height: 500px;
+  opacity: 1;
+}
+
+/* ── Fade simple (generic v-if toggle) ───────────────────────────────────── */
+.fade-enter-active { transition: opacity 0.2s ease-out; }
+.fade-leave-active { transition: opacity 0.15s ease-in; }
+.fade-enter-from,
+.fade-leave-to     { opacity: 0; }
+
+/* ── Slide-down (dropdown, notification panel) ───────────────────────────── */
+.slide-down-enter-active {
+  transition: opacity 0.18s ease-out, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slide-down-leave-active {
+  transition: opacity 0.12s ease-in, transform 0.14s ease-in;
+}
+.slide-down-enter-from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+.slide-down-leave-to   { opacity: 0; transform: translateY(-6px) scale(0.98); }
+
+/* ── Dark mode icon swap (sun ↔ moon) ───────────────────────────────────── */
+.icon-spin-enter-active,
+.icon-spin-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.icon-spin-enter-from {
+  opacity: 0;
+  transform: rotate(-30deg) scale(0.7);
+}
+.icon-spin-leave-to {
+  opacity: 0;
+  transform: rotate(30deg) scale(0.7);
+}

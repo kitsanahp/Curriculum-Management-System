@@ -1,0 +1,497 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   SIDE-BY-SIDE CONTAINER & LAYOUT
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.tqf2-side-by-side-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tqf2-comparison-header {
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
+
+/* ── TOC Bar ─────────────────────────────────────────────────────────────── */
+
+.tqf2-toc-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
+
+.tqf2-toc-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.tqf2-toc-scroll::-webkit-scrollbar { display: none; }
+
+.tqf2-toc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  font-family: var(--font-ui);  /* UI font — ไม่ใช่ Sarabun */
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.tqf2-toc-btn:hover {
+  border-color: #a5b4fc;
+  color: #4338ca;
+  background: #eef2ff;
+}
+.tqf2-toc-btn.active {
+  border-color: #4f46e5;
+  background: #4f46e5;
+  color: white;
+}
+
+.tqf2-toc-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.08);
+  font-size: 0.625rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.tqf2-toc-btn.active .tqf2-toc-index {
+  background: rgba(255,255,255,0.25);
+}
+
+.tqf2-toc-label {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tqf2-toc-counter {
+  flex-shrink: 0;
+  padding: 0.25rem 0.625rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+}
+
+.tqf2-side-by-side-wrapper {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 1.5rem;
+}
+
+.tqf2-divider {
+  width: 1px;
+  background: linear-gradient(to bottom, transparent 0%, #e5e7eb 10%, #e5e7eb 90%, transparent 100%);
+  margin: 0 1rem;
+  flex-shrink: 0;
+}
+
+.tqf2-document-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: #F8F8F8;
+  border: 1px solid #E5E5E5;
+  border-radius: var(--radius-lg);
+}
+
+.tqf2-left-panel {
+  border-right: none;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+.tqf2-right-panel {
+  border-left: none;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+.tqf2-document-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  background: white;
+}
+
+.tqf2-left-panel .tqf2-document-inner  { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
+.tqf2-right-panel .tqf2-document-inner { border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DOCUMENT CONTENT BASE
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.tqf2-document-content {
+  font-family: 'Sarabun', sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #1f2937;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   IMAGE HANDLING (v-html content — ใช้ :deep() เพื่อเข้าถึงใน scoped)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:deep(.tqf2-document-content img) {
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  display: block;
+  margin: 1rem auto;
+  border: 1px solid #E5E5E5;
+  border-radius: var(--radius-md);
+  background: #F8F8F8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  object-fit: contain;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+:deep(.tqf2-document-content img:hover) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+:deep(.tqf2-document-content p img),
+:deep(.tqf2-document-content li img),
+:deep(.tqf2-document-content span img) {
+  max-width: 100% !important;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0.5rem 0;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TABLE HANDLING — ป้องกัน layout พัง
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:deep(.tqf2-document-content table) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  max-height: 60vh;
+  overflow: auto;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  margin: 1.5rem 0;
+  border: 1px solid #E5E5E5;
+  border-radius: var(--radius-md);
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+}
+
+:deep(.tqf2-document-content tbody tr:hover td) {
+  background-color: #f9fafb;
+}
+
+:deep(.tqf2-document-content td),
+:deep(.tqf2-document-content th) {
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  box-sizing: border-box;
+}
+
+:deep(.tqf2-document-content th) {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ล็อกหัวตารางทุกแถวใน thead ให้ติดอยู่ด้านบนเมื่อ scroll */
+:deep(.tqf2-document-content thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+:deep(.tqf2-document-content thead th),
+:deep(.tqf2-document-content thead td) {
+  background-color: #F5F5F5;
+  font-weight: 700;
+  box-shadow: 0 2px 0 #E5E5E5; /* ป้องกันขอบซ้อนทับเวลาเลื่อน */
+}
+
+:deep(.tqf2-document-content table img),
+:deep(.tqf2-document-content td img),
+:deep(.tqf2-document-content th img) {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+  margin: 0.5rem auto;
+  border: 1px solid #E5E5E5;
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  object-fit: contain;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:deep(.tqf2-document-content h1),
+:deep(.tqf2-document-content h2),
+:deep(.tqf2-document-content h3),
+:deep(.tqf2-document-content h4),
+:deep(.tqf2-document-content h5),
+:deep(.tqf2-document-content h6) {
+  color: #111827;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+:deep(.tqf2-document-content h1) { font-size: 1.5rem; }
+:deep(.tqf2-document-content h2) { font-size: 1.25rem; }
+:deep(.tqf2-document-content h3) { font-size: 1.125rem; }
+
+:deep(.tqf2-document-content p) {
+  margin: 0.75rem 0;
+  color: #374151;
+  line-height: 1.65;
+}
+
+:deep(.tqf2-document-content ul),
+:deep(.tqf2-document-content ol) {
+  margin: 1rem 0;
+  padding-left: 1.75rem;
+}
+
+:deep(.tqf2-document-content li) {
+  margin: 0.5rem 0;
+  color: #374151;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TEXT FORMATTING
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:deep(.tqf2-document-content strong),
+:deep(.tqf2-document-content b) {
+  font-weight: 600;
+  color: #111827;
+}
+
+:deep(.tqf2-document-content em),
+:deep(.tqf2-document-content i) {
+  font-style: italic;
+  color: #4b5563;
+}
+
+:deep(.tqf2-document-content u),
+:deep(.tqf2-document-content u a) {
+  text-decoration: underline;
+  text-decoration-color: #d1d5db;
+  text-underline-offset: 3px;
+}
+
+:deep(.tqf2-document-content a) {
+  color: #0066cc;
+  text-decoration: none;
+  border-bottom: 1px solid #cce5ff;
+  transition: all 0.15s ease;
+}
+
+:deep(.tqf2-document-content a:hover) {
+  color: #0052a3;
+  border-bottom-color: #0052a3;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SPECIAL BLOCKS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:deep(.tqf2-document-content blockquote) {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  color: #4b5563;
+  font-style: italic;
+}
+
+:deep(.tqf2-document-content pre) {
+  background: #F5F5F5;
+  border: 1px solid #E5E5E5;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 1rem 0;
+}
+
+:deep(.tqf2-document-content code) {
+  background: #F8F8F8;
+  border: 1px solid #E5E5E5;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  color: #7c3aed;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCROLLBAR (Webkit)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.tqf2-document-inner::-webkit-scrollbar        { width: 6px; }
+.tqf2-document-inner::-webkit-scrollbar-track  { background: transparent; }
+.tqf2-document-inner::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: var(--radius-sm); }
+.tqf2-document-inner::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1600px) {
+  .tqf2-side-by-side-wrapper { padding: 0 1rem; }
+  .tqf2-divider              { margin: 0 0.75rem; }
+  .tqf2-document-inner       { padding: 1.25rem; }
+}
+
+@media (max-width: 1200px) {
+  .tqf2-side-by-side-container { gap: 1rem; padding: 1rem 0; }
+  .tqf2-comparison-header      { padding: 0 1rem; }
+  .tqf2-side-by-side-wrapper   { padding: 0 1rem; }
+
+  :deep(.tqf2-document-content)    { font-size: 0.9rem; }
+  :deep(.tqf2-document-content h1) { font-size: 1.25rem; }
+  :deep(.tqf2-document-content h2) { font-size: 1.125rem; }
+}
+
+@media (max-width: 768px) {
+  .tqf2-side-by-side-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+
+  .tqf2-divider { display: none; }
+
+  .tqf2-document-panel,
+  .tqf2-left-panel,
+  .tqf2-right-panel { border-radius: var(--radius-md); }
+
+  .tqf2-document-inner      { border-radius: var(--radius-md); }
+  .tqf2-comparison-header   { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Image loading shimmer placeholder */
+:deep(.tqf2-document-content img[src*="blob"]) {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DARK MODE OVERRIDES
+   Scoped rules: Vue transforms `.dark .x` → `.dark .x[data-v-xxx]`
+   Deep rules:   Vue transforms `.dark :deep(.x)` → `.dark [data-v-xxx] .x`
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Chrome (panel wrapper + inner scroll area) ──────────────────────────── */
+.dark .tqf2-document-panel {
+  background: var(--dm-surface-2);
+  border-color: var(--dm-border);
+}
+
+.dark .tqf2-document-inner {
+  background: var(--dm-surface);
+}
+
+/* ── TOC navigation bar ───────────────────────────────────────────────────── */
+.dark .tqf2-toc-btn {
+  background: var(--dm-surface);
+  color: var(--dm-text-3);
+  border-color: var(--dm-border);
+}
+.dark .tqf2-toc-btn:hover {
+  background: var(--dm-surface-2);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #a5b4fc;
+}
+.dark .tqf2-toc-btn.active {
+  background: #4f46e5;
+  color: white;
+  border-color: #4f46e5;
+}
+.dark .tqf2-toc-index {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dark .tqf2-toc-counter {
+  background: var(--dm-surface-3);
+  border-color: var(--dm-border);
+}
+
+/* ── Vertical divider ─────────────────────────────────────────────────────── */
+.dark .tqf2-divider {
+  background: linear-gradient(to bottom, transparent 0%, var(--dm-border) 10%, var(--dm-border) 90%, transparent 100%);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+.dark .tqf2-document-inner::-webkit-scrollbar-thumb       { background: var(--dm-border-strong); }
+.dark .tqf2-document-inner::-webkit-scrollbar-thumb:hover { background: var(--dm-border-strong); }
+
+/* NOTE: .tqf2-document-content dark mode rules live in base.css (global scope)
+   because Vue compiles `.dark :deep(...)` in scoped CSS as `.dark[data-v-xxx] ...`
+   which never matches since .dark is on <html> and [data-v-xxx] is on the component div. */
+

@@ -1,0 +1,176 @@
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes list-item-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes skeleton-pulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* ── ST04 — Shimmer effect (gradient sweep) ─────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
+/* ── BT05/FM02 — Shake (form error / button error) ──────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%      { transform: translateX(-7px); }
+  30%      { transform: translateX(6px); }
+  45%      { transform: translateX(-5px); }
+  60%      { transform: translateX(4px); }
+  75%      { transform: translateX(-2px); }
+}
+
+/* ── NT04 / ST03 — Badge bounce (new notification / waiting status) ──────── */
+@keyframes badge-bounce {
+  0%, 100% { transform: scale(1);    }
+  30%      { transform: scale(1.25); }
+  60%      { transform: scale(0.92); }
+}
+
+/* ── ST03 — Slow pulse (status rอรอ / under committee) ───────────────────── */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.45; }
+}
+
+/* ── ST03 — Soft glow ring (pending status) ─────────────────────────────── */
+@keyframes glow-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);    }
+  50%       { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18); }
+}
+
+/* ── BT04 — Checkmark draw (success action) ─────────────────────────────── */
+@keyframes draw-check {
+  from { stroke-dashoffset: 28; }
+  to   { stroke-dashoffset: 0;  }
+}
+
+/* ── ST01 — Progress fill (width animate on mount) ──────────────────────── */
+@keyframes progress-fill {
+  from { width: 0%; }
+}
+
+/* ── UP01 — Drag-over border pulse ──────────────────────────────────────── */
+@keyframes drag-pulse {
+  0%, 100% { border-color: rgba(99, 102, 241, 0.4); background-color: rgba(99, 102, 241, 0.03); }
+  50%       { border-color: rgba(99, 102, 241, 0.8); background-color: rgba(99, 102, 241, 0.07); }
+}
+
+/* ── Modal spring ────────────────────────────────────────────────────────── */
+@keyframes modal-spring-in {
+  0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
+  60%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+@keyframes modal-spring-out {
+  from { opacity: 1; transform: scale(1)    translateY(0);    }
+  to   { opacity: 0; transform: scale(0.94) translateY(6px);  }
+}
+
+/* ── Backdrop fade ───────────────────────────────────────────────────────── */
+@keyframes backdrop-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* ── Animation utilities ─────────────────────────────────────────────────── */
+
+.animate-fade-in-up    { animation: fade-in-up    0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-scale-in      { animation: scale-in      0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-in-left { animation: slide-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-list-item     { animation: list-item-in  0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-card-in       { animation: card-in       0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-skeleton      { animation: skeleton-pulse 2s  cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Shimmer skeleton — ใช้แทน animate-skeleton เมื่อต้องการ gradient sweep */
+.animate-shimmer {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f8fafc 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.dark .animate-shimmer {
+  background: linear-gradient(90deg, #1e2640 25%, #263050 50%, #1e2640 75%);
+  background-size: 200% 100%;
+}
+
+/* Shake — ใส่ class แล้วลบออกหลัง 400ms เพื่อ retrigger */
+.animate-shake { animation: shake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
+/* Badge bounce — เมื่อ unread count เปลี่ยน */
+.animate-badge-bounce { animation: badge-bounce 400ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Slow pulse — status รอดำเนินการ */
+.animate-pulse-slow  { animation: pulse-slow 2.4s ease-in-out infinite; }
+.animate-glow-ring   { animation: glow-ring  2.4s ease-in-out infinite; }
+
+/* Drag-over pulse */
+.animate-drag-pulse  { animation: drag-pulse 1.2s ease-in-out infinite; }
+
+/* Progress fill */
+.animate-progress-fill { animation: progress-fill 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+.transition-impeccable { transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* ── Hover lift — card elevation on hover ────────────────────────────────── */
+.hover-lift {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.10), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
+}
+.dark .hover-lift:hover {
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45), 0 2px 8px -2px rgba(0, 0, 0, 0.30);
+}
+
+/* ── Stagger delays (ใช้คู่กับ animate-list-item หรือ animate-card-in) ──── */
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.40s; }
+
+/* ── Accessibility — prefers-reduced-motion ──────────────────────────────── */
+/* คนที่เปิด "Reduce Motion" ใน OS จะได้ transition เกือบ 0 ทั้งหมด          */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+    scroll-behavior:           auto   !important;
+  }
+}
+

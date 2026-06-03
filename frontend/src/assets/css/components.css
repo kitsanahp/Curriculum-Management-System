@@ -1,0 +1,194 @@
+@layer components {
+  /* ── Buttons (Formal Enterprise Standard) ──────────────────────────────── */
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2
+           bg-primary-700 text-white text-[13px] font-bold
+           hover:bg-primary-800 border border-primary-800
+           active:scale-[0.97] transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    border-radius: var(--radius-sm);
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2
+           bg-white text-gray-700 border border-gray-300 text-[13px] font-bold
+           hover:bg-gray-50 hover:border-gray-400
+           active:scale-[0.97] transition-all duration-150;
+    border-radius: var(--radius-sm);
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2
+           bg-status-danger text-white border border-status-danger-dark text-[13px] font-bold
+           hover:bg-status-danger-dark
+           active:scale-[0.97] transition-all duration-150;
+    border-radius: var(--radius-sm);
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ── Inputs (High Density) ────────────────────────────────────────────── */
+
+  .input-base {
+    @apply block w-full border-gray-300 text-sm bg-white
+           placeholder:text-gray-400 py-1.5
+           focus:border-primary-600 focus:ring-1 focus:ring-primary-600 focus:bg-white
+           transition-none shadow-none;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Cards (Document/Enterprise Feel) ────────────────────────────────── */
+
+  .card {
+    @apply bg-white border border-gray-300 p-4 transition-none shadow-none;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Badges ──────────────────────────────────────────────────────────── */
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 text-[11px] font-bold
+           tracking-tight border whitespace-nowrap transition-none;
+    border-radius: var(--radius-sm);
+  }
+
+  .badge-neutral { @apply bg-gray-100 text-gray-600 border-gray-300; }
+  .badge-primary { @apply bg-primary-50 text-primary-700 border-primary-200; }
+  .badge-warning { @apply bg-orange-50 text-orange-700 border-orange-200; }
+  .badge-error   { @apply bg-red-50 text-red-700 border-red-200; }
+  .badge-success { @apply bg-emerald-50 text-emerald-700 border-emerald-200; }
+
+  /* ── Custom Tooltip (data-tooltip attribute) ────────────────────────── */
+  [data-tooltip] { position: relative; }
+  [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(2px);
+    background: oklch(98% 0.004 264);
+    color: oklch(38% 0.012 264);
+    border: 1px solid oklch(88% 0.008 264);
+    box-shadow: 0 2px 8px oklch(20% 0.01 264 / 0.08);
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    padding: 3px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease, transform 120ms ease;
+    z-index: 9999;
+  }
+  [data-tooltip]:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  [data-tooltip-bottom]::after {
+    bottom: auto;
+    top: calc(100% + 6px);
+    transform: translateX(-50%) translateY(-2px);
+  }
+  [data-tooltip-bottom]:hover::after {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Document Typography ──────────────────────────────────────────────
+     ใช้กับ container ที่แสดงเนื้อหาเอกสารราชการ (TQF2, เอกสารหลักสูตร)
+     ────────────────────────────────────────────────────────────────── */
+  /* ── UI Emoji — Noto Emoji thin monochrome style ────────────────────────
+     ใช้ครอบ emoji ที่ต้องการให้ render เป็น thin line / grayscale
+     เหมือน icon outline ไม่ใช่ emoji สีสันตามระบบ
+     ────────────────────────────────────────────────────────────────── */
+  .ui-emoji {
+    font-family: 'Noto Emoji', sans-serif;
+    font-weight: 300;
+    filter: grayscale(1) brightness(0.55);
+    display: inline-block;
+    line-height: 1;
+    vertical-align: middle;
+    user-select: none;
+  }
+
+  .document-sarabun {
+    font-family: var(--font-document);
+    font-size: 0.9375rem;
+    line-height: 1.75;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  /* heading ภายใน document zone ลด tracking ให้ natural กว่า UI heading */
+  .document-sarabun h1,
+  .document-sarabun h2,
+  .document-sarabun h3,
+  .document-sarabun h4 {
+    font-family: var(--font-document);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+}
+
+/* ── Dark mode: component classes (@apply inlines CSS, class-selectors don't match) ── */
+
+.dark .card {
+  background-color: var(--dm-surface) !important;
+  border-color:     var(--dm-border)  !important;
+}
+
+.dark .btn-secondary {
+  background-color: var(--dm-surface)       !important;
+  color:            var(--dm-text-2)        !important;
+  border-color:     var(--dm-border-strong) !important;
+}
+.dark .btn-secondary:hover {
+  background-color: var(--dm-surface-2)     !important;
+  border-color:     var(--dm-border-strong) !important;
+  color:            var(--dm-text-1)        !important;
+}
+
+.dark .input-base {
+  background-color: var(--dm-input-bg)      !important;
+  color:            var(--dm-text-1)        !important;
+  border-color:     var(--dm-border-strong) !important;
+}
+.dark .input-base::placeholder { color: var(--dm-text-4) !important; }
+.dark .input-base:focus {
+  background-color: var(--dm-input-bg)      !important;
+  border-color:     rgba(99,102,241,0.7)   !important;
+}
+
+.dark .badge-neutral {
+  background-color: var(--dm-surface-2)     !important;
+  color:            var(--dm-text-2)        !important;
+  border-color:     var(--dm-border-strong) !important;
+}
+
+.dark .badge-primary {
+  background-color: rgba(79,70,229,0.15)    !important;
+  color:            #a5b4fc                 !important;
+  border-color:     rgba(79,70,229,0.30)    !important;
+}
+
+.dark .badge-warning {
+  background-color: rgba(245,158,11,0.12)   !important;
+  color:            #fcd34d                 !important;
+  border-color:     rgba(245,158,11,0.35)   !important;
+}
+
+.dark .badge-error {
+  background-color: rgba(239,68,68,0.12)    !important;
+  color:            #fca5a5                 !important;
+  border-color:     rgba(239,68,68,0.30)    !important;
+}
+
+.dark .badge-success {
+  background-color: rgba(16,185,129,0.12)   !important;
+  color:            #6ee7b7                 !important;
+  border-color:     rgba(16,185,129,0.30)   !important;
+}
+

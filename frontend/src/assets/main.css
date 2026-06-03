@@ -1,0 +1,53 @@
+/* Entry point — import ก่อน @tailwind เพื่อให้ PostCSS ประมวลผล @layer ถูกต้อง */
+@import './css/base.css';
+@import './css/components.css';
+@import './css/animations.css';
+@import './css/transitions.css';
+
+/* ── Design token: border-radius scale ──────────────────────────────────── */
+:root {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* ── Typography: font family ─────────────────────────────────────────── */
+  --font-ui:       'Anuphan', system-ui, sans-serif;
+  --font-document: 'Sarabun', sans-serif;
+  --font-sans:     var(--font-ui);
+
+  /* ── Typography: weight tokens ───────────────────────────────────────── */
+  --fw-light:     300;   /* captions, meta, secondary labels */
+  --fw-regular:   400;   /* body text, table cells */
+  --fw-medium:    500;   /* interactive labels, nav items */
+  --fw-semibold:  600;   /* section headings, card titles */
+  --fw-bold:      700;   /* page headings, emphasis */
+  --fw-extrabold: 800;   /* hero / display text */
+
+  /* ── Typography: size scale (px → rem) ──────────────────────────────── */
+  --text-xs:   0.75rem;    /* 12px — timestamps, badges */
+  --text-sm:   0.875rem;   /* 14px — captions, helper text */
+  --text-base: 1rem;       /* 16px — body */
+  --text-lg:   1.125rem;   /* 18px — lead paragraph */
+  --text-xl:   1.25rem;    /* 20px — card headings */
+  --text-2xl:  1.5rem;     /* 24px — section headings */
+  --text-3xl:  1.875rem;   /* 30px — page headings */
+  --text-4xl:  2.25rem;    /* 36px — hero / display */
+
+  /* ── Typography: line-height ─────────────────────────────────────────── */
+  --leading-tight:  1.35;
+  --leading-snug:   1.5;
+  --leading-normal: 1.75;   /* Thai body text needs generous leading */
+  --leading-loose:  2;
+
+  /* ── Typography: letter-spacing ─────────────────────────────────────── */
+  --tracking-tight:  -0.015em;  /* large headings */
+  --tracking-snug:   -0.01em;   /* subheadings */
+  --tracking-normal:  0em;      /* body */
+  --tracking-wide:    0.01em;   /* all-caps labels, badges */
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+

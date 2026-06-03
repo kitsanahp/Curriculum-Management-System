@@ -1,0 +1,543 @@
+/* Minimal scrollbar — ลบลูกศร ▲▼ และทำให้บางลง (Chrome/Edge/Safari) */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+::-webkit-scrollbar-button { display: none; }
+
+.dark ::-webkit-scrollbar-thumb { background: #2d3654; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #3a4670; }
+
+@layer base {
+  html {
+    font-family: var(--font-ui);
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply antialiased text-gray-800 bg-gray-100;
+    font-family: var(--font-ui);
+    font-weight: var(--fw-regular);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  /* Heading scale — tight tracking สไตล์ minimalist */
+  h1 { font-size: var(--text-3xl); font-weight: var(--fw-bold);     line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
+  h2 { font-size: var(--text-2xl); font-weight: var(--fw-bold);     line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
+  h3 { font-size: var(--text-xl);  font-weight: var(--fw-semibold); line-height: var(--leading-snug);  letter-spacing: var(--tracking-snug); }
+  h4 { font-size: var(--text-lg);  font-weight: var(--fw-semibold); line-height: var(--leading-snug);  letter-spacing: var(--tracking-snug); }
+  h5 { font-size: var(--text-base);font-weight: var(--fw-medium);   line-height: var(--leading-snug); }
+  h6 { font-size: var(--text-sm);  font-weight: var(--fw-medium);   line-height: var(--leading-snug); }
+
+  /* ทำให้ input/button/textarea รับ font ต่อจาก body (browser default แยก) */
+  input, button, textarea, select {
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  /* BUG-08: reset heading letter-spacing ใน document zones
+     ป้องกัน global tracking-tight bleed เข้า Sarabun document content */
+  .tqf2-document-content h1,
+  .tqf2-document-content h2,
+  .tqf2-document-content h3,
+  .tqf2-document-content h4,
+  .tqf2-diff-content h1,
+  .tqf2-diff-content h2,
+  .tqf2-diff-content h3,
+  .tqf2-diff-content h4,
+  .document-sarabun h1,
+  .document-sarabun h2,
+  .document-sarabun h3,
+  .document-sarabun h4 {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ══ Dark Mode Design System ════════════════════════════════════════════════
+   Strategy: CSS design tokens applied to structural containers only.
+   Colored semantic elements (badges, buttons, status) are left untouched.
+   All selectors are flat — no CSS nesting (PostCSS compatibility).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Color tokens ─────────────────────────────────────────────────────── */
+:root {
+  --dm-page:          #f3f4f6;
+  --dm-surface:       #ffffff;
+  --dm-surface-2:     #f9fafb;
+  --dm-surface-3:     #f3f4f6;
+  --dm-border-sub:    #f3f4f6;
+  --dm-border:        #e5e7eb;
+  --dm-border-strong: #d1d5db;
+  --dm-text-1:        #111827;
+  --dm-text-2:        #374151;
+  --dm-text-3:        #6b7280;
+  --dm-text-4:        #9ca3af;
+  --dm-input-bg:      #ffffff;
+  --dm-ring:          #d1d5db;
+  --dm-hover:         rgba(0,0,0,0.03);
+}
+
+/* Indigo-slate palette — harmonises with the primary-900 sidebar.
+   Contrast ratios verified against --dm-surface (#161b2c ≈ L 0.011):
+   --dm-text-1  #dde3f5  →  13.5:1  ✓✓  (WCAG AAA)
+   --dm-text-2  #9aa5c8  →   7.3:1  ✓✓  (WCAG AA)
+   --dm-text-3  #8090b4  →   5.1:1  ✓   (WCAG AA)
+   --dm-text-4  #7b8ab6  →   4.8:1  ✓   (WCAG AA) */
+.dark {
+  --dm-page:          #0f1119;
+  --dm-surface:       #161b2c;
+  --dm-surface-2:     #1c2236;
+  --dm-surface-3:     #10131f;
+  --dm-border-sub:    #1e2640;
+  --dm-border:        #263050;
+  --dm-border-strong: #2e3a60;
+  --dm-text-1:        #dde3f5;   /* primary body text       */
+  --dm-text-2:        #9aa5c8;   /* secondary / labels      */
+  --dm-text-3:        #8090b4;   /* muted / helper text     */
+  --dm-text-4:        #7b8ab6;   /* faint / timestamps/meta */
+  --dm-input-bg:      #1c2236;
+  --dm-ring:          #2e3a60;
+  --dm-hover:         rgba(255,255,255,0.04);
+}
+
+/* ── 2. Page & layout ────────────────────────────────────────────────────── */
+.dark body {
+  background-color: var(--dm-page);
+  color: var(--dm-text-1);
+}
+.dark main {
+  background-color: var(--dm-page) !important;
+}
+.dark header {
+  background-color: rgba(22, 27, 44, 0.93) !important;
+  border-bottom-color: var(--dm-border) !important;
+}
+
+/* ── 3. Surfaces — scoped to main + header + modals ─────────────────────── */
+.dark main .bg-white,
+.dark header .bg-white,
+.dark [role="dialog"] .bg-white  { background-color: var(--dm-surface) !important; }
+
+.dark main .bg-gray-50,
+.dark header .bg-gray-50,
+.dark [role="dialog"] .bg-gray-50 { background-color: var(--dm-surface-3) !important; }
+
+.dark main .bg-gray-100,
+.dark header .bg-gray-100,
+.dark [role="dialog"] .bg-gray-100 { background-color: var(--dm-surface-2) !important; }
+
+/* opacity-variant classes — explicit */
+.dark main .bg-gray-50\/50  { background-color: var(--dm-surface-3) !important; }
+.dark main .bg-gray-50\/30  { background-color: var(--dm-surface-3) !important; }
+.dark main .bg-gray-100\/50 { background-color: var(--dm-surface-2) !important; }
+.dark [role="dialog"] .bg-gray-50\/30 { background-color: var(--dm-surface-3) !important; }
+
+/* ── 3b. bg-white/XX and bg-gray-XX/XX opacity variants ─────────────────── */
+/* PostCSS selector parser rejects "/" in [class*=], so use escaped class     */
+/* names instead (Tailwind encodes "bg-white/95" as selector ".bg-white\/95") */
+.dark main .bg-white\/95,
+.dark main .bg-white\/90,
+.dark main .bg-white\/80,
+.dark main .bg-white\/70,
+.dark main .bg-white\/60,
+.dark main .bg-white\/50,
+.dark header .bg-white\/95,
+.dark header .bg-white\/90,
+.dark [role="dialog"] .bg-white\/95,
+.dark [role="dialog"] .bg-white\/60,
+.dark .fixed .bg-white\/95,
+.dark .fixed .bg-white\/90,
+.dark .fixed .bg-white\/60            { background-color: var(--dm-surface) !important; }
+
+.dark main .bg-gray-50\/80,
+.dark main .bg-gray-50\/70,
+.dark main .bg-gray-50\/60,
+.dark main .bg-gray-50\/40,
+.dark main .bg-gray-50\/20,
+.dark [role="dialog"] .bg-gray-50\/80,
+.dark [role="dialog"] .bg-gray-50\/60,
+.dark .fixed .bg-gray-50\/80,
+.dark .fixed .bg-gray-50\/60,
+.dark .fixed .bg-gray-50\/40          { background-color: var(--dm-surface-3) !important; }
+
+.dark main .bg-gray-100\/80,
+.dark main .bg-gray-100\/60,
+.dark [role="dialog"] .bg-gray-100\/80,
+.dark .fixed .bg-gray-100\/80         { background-color: var(--dm-surface-2) !important; }
+
+/* Self-fixed: bg-white and fixed on the same node (section navigator popup) */
+.dark .fixed.bg-white   { background-color: var(--dm-surface) !important; }
+.dark .fixed.bg-gray-50 { background-color: var(--dm-surface-3) !important; }
+
+/* ── 4. Borders — scoped ─────────────────────────────────────────────────── */
+.dark main .border-gray-100,
+.dark header .border-gray-100,
+.dark [role="dialog"] .border-gray-100 { border-color: var(--dm-border-sub) !important; }
+
+.dark main .border-gray-200,
+.dark header .border-gray-200,
+.dark [role="dialog"] .border-gray-200 { border-color: var(--dm-border) !important; }
+
+.dark main .border-gray-300,
+.dark header .border-gray-300,
+.dark [role="dialog"] .border-gray-300 { border-color: var(--dm-border-strong) !important; }
+
+.dark main .divide-y > * + *,
+.dark main .divide-gray-50 > * + *,
+.dark main .divide-gray-100 > * + *,
+.dark main .divide-gray-200 > * + *,
+.dark header .divide-y > * + *,
+.dark header .divide-gray-50 > * + *,
+.dark [role="dialog"] .divide-y > * + * { border-color: var(--dm-border-sub) !important; }
+
+/* ── 5. Neutral text — scoped (colored text stays as-is) ────────────────── */
+.dark main .text-gray-900,
+.dark header .text-gray-900,
+.dark [role="dialog"] .text-gray-900 { color: var(--dm-text-1) !important; }
+
+.dark main .text-gray-800,
+.dark header .text-gray-800,
+.dark [role="dialog"] .text-gray-800 { color: var(--dm-text-1) !important; }
+
+.dark main .text-gray-700,
+.dark header .text-gray-700,
+.dark [role="dialog"] .text-gray-700 { color: var(--dm-text-2) !important; }
+
+.dark main .text-gray-600,
+.dark header .text-gray-600,
+.dark [role="dialog"] .text-gray-600 { color: var(--dm-text-2) !important; }
+
+.dark main .text-gray-500,
+.dark header .text-gray-500,
+.dark [role="dialog"] .text-gray-500 { color: var(--dm-text-3) !important; }
+
+.dark main .text-gray-400,
+.dark header .text-gray-400,
+.dark [role="dialog"] .text-gray-400 { color: var(--dm-text-4) !important; }
+
+/* ── 5b. Very-light neutral text — decorators, subtle icons, separator pipes ─ */
+.dark main .text-gray-300,
+.dark header .text-gray-300,
+.dark [role="dialog"] .text-gray-300 { color: var(--dm-text-4) !important; }
+
+.dark main .text-gray-200,
+.dark header .text-gray-200 { color: var(--dm-border-strong) !important; }
+
+/* ── 5c. Active chip/pill using bg-gray-900 as selected-state surface ──────── */
+/* Executive dept-filter "ทั้งหมด" button and any other active chips            */
+.dark main button.bg-gray-900 { background-color: rgba(255,255,255,0.14) !important; color: var(--dm-text-1) !important; }
+
+/* ── 6. Form inputs ──────────────────────────────────────────────────────── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark textarea,
+.dark select {
+  background-color: var(--dm-input-bg) !important;
+  color:            var(--dm-text-1)   !important;
+  border-color:     var(--dm-border-strong) !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: var(--dm-text-4) !important; }
+.dark .ring-gray-300 { --tw-ring-color: var(--dm-ring) !important; }
+.dark .ring-gray-200 { --tw-ring-color: var(--dm-border) !important; }
+
+/* ── 7. Tables ───────────────────────────────────────────────────────────── */
+.dark thead,
+.dark thead tr        { background-color: var(--dm-surface-3) !important; }
+.dark thead th        { color: var(--dm-text-3) !important; border-bottom-color: var(--dm-border) !important; }
+.dark tbody tr:hover td { background-color: var(--dm-hover) !important; }
+.dark tbody td        { border-color: var(--dm-border-sub) !important; }
+
+/* ── 8. Fixed-positioned dropdowns and Teleport'd modals ────────────────── */
+.dark .fixed .bg-white        { background-color: var(--dm-surface)   !important; }
+.dark .fixed .bg-gray-50      { background-color: var(--dm-surface-3) !important; }
+.dark .fixed .bg-gray-100     { background-color: var(--dm-surface-2) !important; }
+.dark .fixed .bg-gray-50\/50  { background-color: var(--dm-surface-3) !important; }
+.dark .fixed .bg-gray-50\/30  { background-color: var(--dm-surface-3) !important; }
+.dark .fixed .bg-gray-100\/50 { background-color: var(--dm-surface-2) !important; }
+/* Primary-tint active states — FormSelect active option, role-picker selected */
+.dark .fixed .bg-primary-50,
+.dark .fixed .bg-primary-50\/60 { background-color: rgba(79,70,229,0.15) !important; }
+.dark .fixed .border-gray-300 { border-color: var(--dm-border-strong) !important; }
+.dark .fixed .border-gray-200 { border-color: var(--dm-border)        !important; }
+.dark .fixed .border-gray-100 { border-color: var(--dm-border-sub)    !important; }
+.dark .fixed .text-gray-900   { color: var(--dm-text-1) !important; }
+.dark .fixed .text-gray-800   { color: var(--dm-text-1) !important; }
+.dark .fixed .text-gray-700   { color: var(--dm-text-2) !important; }
+.dark .fixed .text-gray-600   { color: var(--dm-text-2) !important; }
+.dark .fixed .text-gray-500   { color: var(--dm-text-3) !important; }
+.dark .fixed .text-gray-400   { color: var(--dm-text-4) !important; }
+/* Hover backgrounds and borders inside fixed modals/dropdowns              */
+.dark .fixed [class*="hover:bg-gray-"]:hover,
+.dark .fixed [class*="hover:bg-white"]:hover  { background-color: var(--dm-surface-2) !important; }
+.dark .fixed [class*="hover:border-gray"]:hover { border-color: var(--dm-border-strong) !important; }
+
+/* ── 9. Progress bar tracks (rounded-full + bg-gray-100 = track, not card) ─ */
+.dark .bg-gray-100.rounded-full { background-color: var(--dm-border) !important; }
+
+/* ── 10. Hover utilities — attribute selector catches ALL opacity variants ── */
+/* e.g. hover:bg-gray-50/80, hover:bg-gray-100/60, hover:bg-white/10 etc.    */
+.dark main [class*="hover:bg-gray-"]:hover,
+.dark main [class*="hover:bg-white"]:hover { background-color: var(--dm-surface-2) !important; }
+
+/* ── 10b. group-hover backgrounds — secondary action affordances inside groups */
+.dark main .group:hover [class*="group-hover:bg-gray"],
+.dark main .group:hover [class*="group-hover:bg-white"]  { background-color: var(--dm-surface-2) !important; }
+.dark main .group:hover [class*="group-hover:bg-primary"] { background-color: rgba(79,70,229,0.12) !important; }
+
+/* ── 10c. hover:border-gray variants (card borders that highlight on hover) ── */
+.dark main [class*="hover:border-gray"]:hover { border-color: var(--dm-border-strong) !important; }
+
+/* ── 11. Primary-tint accents (active tabs, stepper highlight) ───────────── */
+.dark main .bg-primary-50     { background-color: rgba(79,70,229,0.10) !important; }
+.dark main .bg-primary-50\/40 { background-color: rgba(79,70,229,0.06) !important; }
+.dark main .bg-primary-50\/60 { background-color: rgba(79,70,229,0.09) !important; }
+
+/* ── 11b. Semantic bg-*-50 tints — status badges, action banners, alerts ─── */
+.dark main .bg-blue-50    { background-color: rgba(59,130,246,0.12)  !important; }
+.dark main .bg-amber-50   { background-color: rgba(249,115,22,0.12)  !important; }
+.dark main .bg-red-50     { background-color: rgba(239,68,68,0.12)   !important; }
+.dark main .bg-emerald-50 { background-color: rgba(16,185,129,0.12)  !important; }
+.dark main .bg-indigo-50  { background-color: rgba(99,102,241,0.10)  !important; }
+/* Extended families — used in TQF2 section colors, audit timeline, file type icons */
+.dark main .bg-rose-50    { background-color: rgba(244,63,94,0.12)   !important; }
+.dark main .bg-orange-50  { background-color: rgba(249,115,22,0.12)  !important; }
+.dark main .bg-orange-50\/50,
+.dark main .bg-orange-50\/40,
+.dark main .bg-orange-50\/60,
+.dark main .bg-orange-50\/20          { background-color: rgba(249,115,22,0.12) !important; }
+.dark main .bg-orange-100             { background-color: rgba(249,115,22,0.22) !important; }
+.dark main .bg-violet-50  { background-color: rgba(124,58,237,0.12)  !important; }
+.dark main .bg-purple-50  { background-color: rgba(147,51,234,0.10)  !important; }
+.dark main .bg-purple-50\/70,
+.dark main .bg-purple-50\/50,
+.dark main .bg-purple-50\/30  { background-color: rgba(147,51,234,0.10)  !important; }
+.dark main .bg-teal-50    { background-color: rgba(20,184,166,0.10)  !important; }
+.dark main .bg-cyan-50    { background-color: rgba(6,182,212,0.12)   !important; }
+.dark main .bg-sky-50     { background-color: rgba(14,165,233,0.12)  !important; }
+.dark main .bg-slate-50   { background-color: var(--dm-surface-3)    !important; }
+.dark main .bg-slate-100  { background-color: var(--dm-surface-2)    !important; }
+
+/* bg-*-50/* opacity variants — committee cards, file type headers            */
+.dark main .bg-primary-50\/50,
+.dark main .bg-primary-50\/30,
+.dark main .bg-primary-50\/20         { background-color: rgba(79,70,229,0.10)  !important; }
+.dark main .bg-emerald-50\/50,
+.dark main .bg-emerald-50\/40,
+.dark main .bg-emerald-50\/60,
+.dark main .bg-emerald-50\/20         { background-color: rgba(16,185,129,0.12) !important; }
+.dark main .bg-amber-50\/50,
+.dark main .bg-amber-50\/40,
+.dark main .bg-amber-50\/60,
+.dark main .bg-amber-50\/20           { background-color: rgba(249,115,22,0.12) !important; }
+.dark main .bg-red-50\/40,
+.dark main .bg-red-50\/60             { background-color: rgba(239,68,68,0.12)  !important; }
+.dark main .bg-blue-50\/40            { background-color: rgba(59,130,246,0.12) !important; }
+.dark main .bg-indigo-50\/50,
+.dark main .bg-indigo-50\/20,
+.dark main .bg-indigo-50\/40          { background-color: rgba(99,102,241,0.10) !important; }
+.dark main .bg-rose-50\/50,
+.dark main .bg-rose-50\/20            { background-color: rgba(244,63,94,0.12)  !important; }
+.dark main .bg-violet-50\/50,
+.dark main .bg-violet-50\/20          { background-color: rgba(124,58,237,0.12) !important; }
+.dark main .bg-cyan-50\/50,
+.dark main .bg-cyan-50\/20            { background-color: rgba(6,182,212,0.12)  !important; }
+.dark main .bg-slate-50\/30           { background-color: var(--dm-surface-3)   !important; }
+
+/* bg-*-100 shades — connector lines, icon containers, level badges          */
+.dark main .bg-primary-100 { background-color: rgba(79,70,229,0.20)  !important; }
+.dark main .bg-emerald-100 { background-color: rgba(16,185,129,0.22) !important; }
+.dark main .bg-teal-100    { background-color: rgba(20,184,166,0.22) !important; }
+.dark main .bg-amber-100   { background-color: rgba(249,115,22,0.22) !important; }
+.dark main .bg-red-100     { background-color: rgba(239,68,68,0.22)  !important; }
+.dark main .bg-rose-100    { background-color: rgba(244,63,94,0.22)  !important; }
+.dark main .bg-blue-100    { background-color: rgba(59,130,246,0.22) !important; }
+.dark main .bg-sky-100     { background-color: rgba(14,165,233,0.22) !important; }
+.dark main .bg-indigo-100  { background-color: rgba(99,102,241,0.20) !important; }
+.dark main .bg-violet-100  { background-color: rgba(124,58,237,0.22) !important; }
+.dark main .bg-purple-100  { background-color: rgba(147,51,234,0.20) !important; }
+
+/* Hover states for StatusBadge and committee file cards */
+.dark main [class*="hover:bg-blue-"]:hover,
+.dark main .bg-blue-100\/50              { background-color: rgba(59,130,246,0.18)  !important; }
+.dark main [class*="hover:bg-amber-"]:hover,
+.dark main .bg-amber-100\/50             { background-color: rgba(249,115,22,0.18) !important; }
+.dark main [class*="hover:bg-red-"]:hover,
+.dark main .bg-red-100\/50               { background-color: rgba(239,68,68,0.18)  !important; }
+.dark main [class*="hover:bg-emerald-"]:hover,
+.dark main .bg-emerald-100\/50           { background-color: rgba(16,185,129,0.18) !important; }
+
+/* ── 12. Shadow depth boost in dark ─────────────────────────────────────── */
+.dark .shadow-sm { box-shadow: 0 1px 4px 0 rgba(0,0,0,0.5) !important; }
+.dark .shadow    { box-shadow: 0 2px 10px 0 rgba(0,0,0,0.6) !important; }
+
+/* ── 13. Semantic colored text — dark-hue shades fail on dark surfaces ───── */
+/* All *-700/*-900 text colors lifted to *-300 equivalents for contrast ≥4.5:1 */
+.dark main .text-red-900,
+.dark main .text-red-700     { color: #fca5a5 !important; }  /* red-300     */
+.dark main .text-red-600,
+.dark main .text-red-500     { color: #fca5a5 !important; }  /* red-300     */
+.dark main .text-amber-900,
+.dark main .text-amber-700   { color: #fdba74 !important; }  /* orange-300  */
+.dark main .text-amber-600,
+.dark main .text-amber-500   { color: #fed7aa !important; }  /* orange-200  */
+.dark main .text-orange-900,
+.dark main .text-orange-800,
+.dark main .text-orange-700  { color: #fdba74 !important; }  /* orange-300  */
+.dark main .text-orange-600,
+.dark main .text-orange-500,
+.dark main .text-orange-400  { color: #fed7aa !important; }  /* orange-200  */
+.dark main .text-blue-900,
+.dark main .text-blue-700    { color: #93c5fd !important; }  /* blue-300    */
+.dark main .text-blue-600,
+.dark main .text-blue-500    { color: #93c5fd !important; }  /* blue-300    */
+.dark main .text-emerald-900,
+.dark main .text-emerald-700 { color: #6ee7b7 !important; }  /* emerald-300 */
+.dark main .text-emerald-600,
+.dark main .text-emerald-500 { color: #6ee7b7 !important; }  /* emerald-300 */
+
+/* Border tints for semantic badges — keep consistent with bg tint */
+.dark main .border-blue-200    { border-color: rgba(59,130,246,0.30)  !important; }
+.dark main .border-amber-200,
+.dark main .border-amber-300   { border-color: rgba(249,115,22,0.35)  !important; }
+.dark main .border-orange-200,
+.dark main .border-orange-300  { border-color: rgba(249,115,22,0.35)  !important; }
+.dark main .border-orange-400  { border-color: rgba(249,115,22,0.50)  !important; }
+.dark main [class*="hover:bg-orange-"]:hover,
+.dark main .bg-orange-100\/50  { background-color: rgba(249,115,22,0.18) !important; }
+.dark main .border-red-200     { border-color: rgba(239,68,68,0.30)   !important; }
+.dark main .border-emerald-200 { border-color: rgba(16,185,129,0.30)  !important; }
+.dark main .border-primary-200 { border-color: rgba(79,70,229,0.30)   !important; }
+.dark main .border-primary-300 { border-color: rgba(79,70,229,0.40)   !important; }
+.dark main .border-indigo-100,
+.dark main .border-indigo-200  { border-color: rgba(99,102,241,0.25)  !important; }
+.dark main .border-red-100     { border-color: rgba(239,68,68,0.20)   !important; }
+.dark main .border-purple-200  { border-color: rgba(147,51,234,0.30)  !important; }
+.dark main .border-rose-200    { border-color: rgba(244,63,94,0.30)   !important; }
+.dark main .border-violet-200  { border-color: rgba(124,58,237,0.30)  !important; }
+.dark main .border-cyan-200    { border-color: rgba(6,182,212,0.30)   !important; }
+.dark main .border-slate-200   { border-color: var(--dm-border-sub)   !important; }
+
+/* Additional colored text */
+.dark main .text-purple-700,
+.dark main .text-purple-600    { color: #d8b4fe !important; }  /* purple-300  */
+.dark main .text-indigo-700,
+.dark main .text-indigo-600    { color: #a5b4fc !important; }  /* indigo-300  */
+.dark main .text-indigo-500,
+.dark main .text-indigo-400    { color: #c7d2fe !important; }  /* indigo-200  */
+.dark main .text-rose-700,
+.dark main .text-rose-600      { color: #fda4af !important; }  /* rose-300    */
+.dark main .text-rose-500,
+.dark main .text-rose-400      { color: #fda4af !important; }  /* rose-300    */
+.dark main .text-violet-700,
+.dark main .text-violet-600    { color: #c4b5fd !important; }  /* violet-300  */
+.dark main .text-teal-700,
+.dark main .text-teal-600      { color: #5eead4 !important; }  /* teal-300    */
+.dark main .text-teal-500,
+.dark main .text-teal-400      { color: #99f6e4 !important; }  /* teal-200    */
+.dark main .text-sky-700,
+.dark main .text-sky-600       { color: #7dd3fc !important; }  /* sky-300     */
+.dark main .text-sky-500,
+.dark main .text-sky-400       { color: #bae6fd !important; }  /* sky-200     */
+.dark main .text-cyan-700,
+.dark main .text-cyan-600      { color: #67e8f9 !important; }  /* cyan-300    */
+.dark main .text-cyan-500,
+.dark main .text-cyan-400      { color: #a5f3fc !important; }  /* cyan-200    */
+.dark main .text-slate-500,
+.dark main .text-slate-400     { color: var(--dm-text-3)   !important; }
+
+/* ── 14. ring-white on dark backgrounds — bleed-through ring on icon dots ── */
+/* StatusTimeline icon circles use ring-4 ring-white. On dark bg the white    */
+/* ring is very visible. Remap to page bg so it creates a subtle inset halo.  */
+.dark .ring-white { --tw-ring-color: var(--dm-page) !important; }
+
+/* ── 15. Gradient stop overrides — from-* stops not covered by bg-* rules ── */
+/* "latest file" row uses from-primary-50/50 gradient, creating light tint.   */
+.dark main .from-primary-50\/50 { --tw-gradient-from: rgba(79,70,229,0.06) !important; }
+.dark main .from-primary-50\/30 { --tw-gradient-from: rgba(79,70,229,0.04) !important; }
+.dark main .from-white          { --tw-gradient-from: var(--dm-surface)    !important; }
+.dark main .from-gray-50        { --tw-gradient-from: var(--dm-surface-3)  !important; }
+
+/* ── 16. Document paper island — always render as physical white paper ──────
+   DocumentPreviewModal is Teleported to body inside a .fixed container.
+   Rule ".dark .fixed .bg-white" (specificity 0,3,0) darkens the paper.
+   Counter it here with equal specificity placed LATER in the cascade.
+   "color" resets body's --dm-text-1 inheritance so prose text stays dark.    */
+.dark .fixed .doc-paper {
+  background-color: #ffffff !important;
+  color:            #111827 !important;
+}
+/* Annotation sidebar + modal top bar stay dark-themed — no override needed.
+   But text utilities applied inside modal (outside main) won't hit section 13
+   rules, so we manually fix low-contrast text in the sidebar and top-bar.    */
+.dark .fixed .modal-topbar {
+  background-color: var(--dm-surface)  !important;
+  border-color:     var(--dm-border)   !important;
+}
+.dark .fixed .modal-topbar .text-gray-900 { color: var(--dm-text-1) !important; }
+.dark .fixed .modal-topbar .text-gray-400 { color: var(--dm-text-3) !important; }
+.dark .fixed .modal-topbar .text-gray-500 { color: var(--dm-text-2) !important; }
+.dark .fixed .doc-sidebar {
+  background-color: var(--dm-surface)  !important;
+  border-color:     var(--dm-border)   !important;
+}
+.dark .fixed .doc-sidebar .text-gray-900 { color: var(--dm-text-1) !important; }
+.dark .fixed .doc-sidebar .text-gray-800 { color: var(--dm-text-1) !important; }
+.dark .fixed .doc-sidebar .text-gray-700 { color: var(--dm-text-2) !important; }
+.dark .fixed .doc-sidebar .text-gray-500,
+.dark .fixed .doc-sidebar .text-gray-400 { color: var(--dm-text-3) !important; }
+.dark .fixed .doc-sidebar .divide-gray-200 > * { border-color: var(--dm-border-sub) !important; }
+.dark .fixed .doc-sidebar .border-gray-300,
+.dark .fixed .doc-sidebar .border-b       { border-color: var(--dm-border) !important; }
+
+/* ── 17. TQF2 component chrome (scoped classes, global selectors needed) ────
+   Non-:deep() rules stay in TQF2SideBySideComparison.css (they work fine).
+   :deep() rules MUST live here because Vue compiles `.dark :deep(x)` in scoped
+   CSS as `.dark[data-v-xxx] x` which never matches (.dark is on <html>,
+   [data-v-xxx] is on the component root — different elements).                */
+.dark .tqf2-document-inner  { background: var(--dm-surface)   !important; }
+.dark .tqf2-document-panel  { background: var(--dm-surface-2) !important; border-color: var(--dm-border) !important; }
+.dark .tqf2-toc-btn         { background: var(--dm-surface)   !important; color: var(--dm-text-3)  !important; border-color: var(--dm-border) !important; }
+.dark .tqf2-toc-btn:hover   { background: var(--dm-surface-2) !important; color: #a5b4fc !important; border-color: rgba(99,102,241,0.5) !important; }
+.dark .tqf2-toc-btn.active  { background: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+.dark .tqf2-toc-counter     { background: var(--dm-surface-3) !important; border-color: var(--dm-border) !important; }
+.dark .tqf2-divider         { background: linear-gradient(to bottom, transparent 0%, var(--dm-border) 10%, var(--dm-border) 90%, transparent 100%) !important; }
+
+/* ── 17b. TQF2 document content (v-html rendered) ───────────────────────── */
+.dark .tqf2-document-content                    { color: var(--dm-text-2) !important; }
+.dark .tqf2-document-content table              { background: var(--dm-surface-2) !important; border-color: var(--dm-border) !important; }
+.dark .tqf2-document-content thead th,
+.dark .tqf2-document-content thead td           { background-color: var(--dm-surface-3) !important; color: var(--dm-text-3) !important; box-shadow: 0 2px 0 var(--dm-border) !important; }
+.dark .tqf2-document-content td,
+.dark .tqf2-document-content th                 { background-color: var(--dm-surface) !important; border-bottom-color: var(--dm-border) !important; border-right-color: var(--dm-border) !important; color: var(--dm-text-2) !important; }
+.dark .tqf2-document-content tbody tr:hover td  { background-color: var(--dm-hover)   !important; }
+.dark .tqf2-document-content h1,
+.dark .tqf2-document-content h2,
+.dark .tqf2-document-content h3,
+.dark .tqf2-document-content h4,
+.dark .tqf2-document-content h5,
+.dark .tqf2-document-content h6                 { color: var(--dm-text-1) !important; }
+.dark .tqf2-document-content p                  { color: var(--dm-text-2) !important; }
+.dark .tqf2-document-content li                 { color: var(--dm-text-2) !important; }
+.dark .tqf2-document-content strong,
+.dark .tqf2-document-content b                  { color: var(--dm-text-1) !important; }
+.dark .tqf2-document-content em,
+.dark .tqf2-document-content i                  { color: var(--dm-text-3) !important; }
+.dark .tqf2-document-content a                  { color: #93c5fd !important; border-bottom-color: rgba(147,197,253,0.3) !important; }
+.dark .tqf2-document-content a:hover            { color: #bfdbfe !important; border-bottom-color: #93c5fd !important; }
+.dark .tqf2-document-content pre                { background: var(--dm-surface-2) !important; border-color: var(--dm-border) !important; color: var(--dm-text-2) !important; }
+.dark .tqf2-document-content code               { background: var(--dm-surface-2) !important; border-color: var(--dm-border) !important; color: #c4b5fd !important; }
+.dark .tqf2-document-content blockquote         { color: var(--dm-text-3) !important; border-left-color: #93c5fd !important; }
+.dark .tqf2-document-content img                { background: var(--dm-surface-2) !important; border-color: var(--dm-border) !important; }
+
+/* ── 17c. TQF2 diff content (v-html rendered) ───────────────────────────── */
+.dark .tqf2-diff-content table                  { border-color: var(--dm-border) !important; }
+.dark .tqf2-diff-content td,
+.dark .tqf2-diff-content th                     { background-color: var(--dm-surface) !important; border-color: var(--dm-border-sub) !important; color: var(--dm-text-2) !important; }
+.dark .tqf2-diff-content th                     { background-color: var(--dm-surface-3) !important; color: var(--dm-text-3) !important; }
+.dark .tqf2-diff-content ins                    { background-color: rgba(16,185,129,0.15) !important; color: #6ee7b7 !important; box-shadow: 0 0 0 1px rgba(16,185,129,0.25) !important; }
+.dark .tqf2-diff-content del                    { background-color: rgba(239,68,68,0.15)  !important; color: #fca5a5 !important; box-shadow: 0 0 0 1px rgba(239,68,68,0.25)  !important; }

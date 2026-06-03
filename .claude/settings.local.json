@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node \"c:\\\\Users\\\\User\\\\OneDrive\\\\เดสก์ท็อป\\\\curriculum-management-system\\\\.claude\\\\skills\\\\impeccable\\\\scripts\\\\load-context.mjs\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\User\\\\OneDrive\\\\เดสก์ท็อป\\\\curriculum-management-system\" -Recurse -Force)",
+      "Bash(Select-Object -First 50)"
+    ]
+  }
+}
