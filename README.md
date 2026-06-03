@@ -1,49 +1,20 @@
-# Curriculum Management System
+# ระบบบริหารจัดการหลักสูตร (Curriculum Management System)
 
-A centralized platform for managing, tracking, and auditing academic curricula for the Faculty of Science, Naresuan University. This system replaces manual document tracking with an automated pipeline, providing clear visibility into the curriculum approval process.
+แพลตฟอร์มศูนย์กลางสำหรับการบริหารจัดการ ติดตาม และตรวจสอบหลักสูตรการศึกษาสำหรับคณะวิทยาศาสตร์ มหาวิทยาลัยนเรศวร ระบบนี้ถูกพัฒนาขึ้นเพื่อทดแทนการติดตามเอกสารแบบแมนนวลด้วยกระบวนการทำงานแบบอัตโนมัติ ทำให้สามารถมองเห็นสถานะและขั้นตอนการอนุมัติหลักสูตรได้อย่างชัดเจน
 
-## Dashboard Overview
+## ภาพรวมของระบบ
 
-![Dashboard Screenshot](./screenshot.png)
+![ภาพหน้าจอระบบ](./screenshot.png)
 
-## Key Features
+## ฟีเจอร์หลัก
 
-- **Automated Pipeline:** Track the exact status of a curriculum in the approval process.
-- **Role-Based Access Control:** Specifically tailored workflows for Faculty Members, Administrators, Executives, and Registrars.
-- **Document Management:** Securely upload, review, and audit TQF documents.
-- **Modern Interface:** A clean, professional, and mobile-accessible design reflecting a modern educational brand.
+- **ระบบติดตามอัตโนมัติ:** สามารถติดตามสถานะปัจจุบันของหลักสูตรในขั้นตอนการอนุมัติได้อย่างแม่นยำ
+- **การจัดการสิทธิ์การใช้งาน:** ระบบเวิร์กโฟลว์ที่ออกแบบมาเฉพาะสำหรับ คณาจารย์ เจ้าหน้าที่ ผู้บริหาร และฝ่ายทะเบียน
+- **การจัดการเอกสาร:** รองรับการอัปโหลด ตรวจสอบ และอนุมัติเอกสาร มคอ. อย่างปลอดภัย
+- **อินเทอร์เฟซทันสมัย:** การออกแบบที่สะอาดตา เป็นมืออาชีพ และรองรับการใช้งานบนมือถือ สะท้อนภาพลักษณ์ที่ทันสมัยขององค์กรการศึกษา
 
-## Technology Stack
+## โครงสร้างเทคโนโลยี (Technology Stack)
 
-- **Frontend:** Vue.js 3, Vite, Tailwind CSS, Pinia, Vue Router
-- **Backend:** Node.js, Express, Sequelize (ORM), MySQL
-- **Security & Authentication:** JWT, bcryptjs, Helmet
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js
-- MySQL Database
-
-### Installation & Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/kitsanahp/Curriculum-Management-System.git
-   ```
-
-2. Setup Backend:
-   ```bash
-   cd backend
-   npm install
-   # Create a .env file based on environment requirements
-   npm run dev
-   ```
-
-3. Setup Frontend:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+- **ส่วนหน้า (Frontend):** Vue.js 3, Vite, Tailwind CSS, Pinia, Vue Router
+- **ส่วนหลัง (Backend):** Node.js, Express, Sequelize (ORM), MySQL
+- **ความปลอดภัยและการยืนยันตัวตน:** JWT, bcryptjs, Helmet
