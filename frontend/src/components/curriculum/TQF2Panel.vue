@@ -250,11 +250,13 @@
        </div>
       </div>
 
-      <!-- Compare indicator -->
+      <!-- Swap direction button -->
       <div class="flex items-center justify-center shrink-0">
-       <div class="w-7 h-7 rounded-full bg-gray-100 ring-1 ring-inset ring-gray-200 flex items-center justify-center" :data-tooltip="'เปรียบเทียบสองเวอร์ชัน'" data-tooltip-bottom>
+       <button @click="swapCompareDirection"
+        class="w-7 h-7 rounded-full bg-gray-100 ring-1 ring-inset ring-gray-200 flex items-center justify-center hover:bg-primary-50 hover:ring-primary-300 active:scale-[0.9] transition-all ease-ios"
+        :data-tooltip="'สลับเวอร์ชันเดิม ↔ ใหม่'" data-tooltip-bottom>
         <PhArrowsLeftRight class="w-3.5 h-3.5 text-gray-500 rotate-90 sm:rotate-0" weight="bold" />
-       </div>
+       </button>
       </div>
 
       <!-- Doc B (หลัง) -->
@@ -668,8 +670,11 @@ const fileGroups = computed(() => {
 // เรียง "เก่า → ใหม่" เสมอ ไม่ว่าผู้ใช้จะกดเลือกลำดับไหน
 // เพื่อให้ทิศทาง diff ([0]=เดิม, [1]=ใหม่) และป้ายกำกับถูกต้องตรงกัน
 // ใช้ createdAt เป็นหลัก ไม่ใช้ version_number เพราะ PDF/DOCX นับเวอร์ชันแยกกัน อาจชนกันได้
-const compareDocuments = computed(() =>
- selectedIds.value
+// หมายเหตุ: เวลาอัปโหลดอาจสวนทางกับความเป็นจริง (เช่น อัปไฟล์ฉบับแก้ก่อน แล้วค่อยอัป
+// ต้นฉบับ) → ผู้ใช้กดปุ่มลูกศรตรงกลางเพื่อสลับทิศทางได้ (compareSwapped)
+const compareSwapped = ref(false);
+const compareDocuments = computed(() => {
+ const docs = selectedIds.value
   .map(id => versions.value.find(v => v.id === id))
   .filter(Boolean)
   .slice()
@@ -678,8 +683,14 @@ const compareDocuments = computed(() =>
    const tb = new Date(b.createdAt).getTime();
    if (ta !== tb) return ta - tb;
    return (a.version_number ?? 0) - (b.version_number ?? 0);
-  })
-);
+  });
+ return compareSwapped.value ? docs.slice().reverse() : docs;
+});
+
+const swapCompareDirection = () => {
+ compareSwapped.value = !compareSwapped.value;
+ loadDiff();
+};
 
 const ROLE_LABELS = {
  admin:     'เจ้าหน้าที่หลักสูตรคณะ',
@@ -779,8 +790,8 @@ const handlePreviewDownload = () => {
  downloadFile(apiPath.replace('/preview', '/download'), doc.original_name);
 };
 
-const enterCompare = () => { compareMode.value = true; selectedIds.value = []; diffResult.value = null; diffError.value = ''; };
-const exitCompare = () => { compareMode.value = false; selectedIds.value = []; diffResult.value = null; diffError.value = ''; };
+const enterCompare = () => { compareMode.value = true; compareSwapped.value = false; selectedIds.value = []; diffResult.value = null; diffError.value = ''; };
+const exitCompare = () => { compareMode.value = false; compareSwapped.value = false; selectedIds.value = []; diffResult.value = null; diffError.value = ''; };
 const toggleSelect = (id) => {
  if (selectedIds.value.includes(id)) selectedIds.value = selectedIds.value.filter(x => x !== id);
  else if (selectedIds.value.length < 2) selectedIds.value = [...selectedIds.value, id];
