@@ -96,23 +96,10 @@ function tokenize(html) {
 
 const isTag = (t) => t.length > 0 && t[0] === '<';
 
-/**
- * ครอบ token run ด้วย <ins>/<del> โดยไม่ครอบทับแท็กโครงสร้าง
- * แท็กถูกปล่อยผ่านนอกแท็ก diff → HTML ยัง valid (ไม่ตัดกลาง <table>/<tr>/<td>)
- */
-function wrapRun(tokens, tag, cssClass) {
-  let out = '';
-  let buf = '';
-  const flush = () => {
-    if (buf) { out += `<${tag} class="${cssClass}">${buf}</${tag}>`; buf = ''; }
-  };
-  for (const t of tokens) {
-    if (isTag(t)) { flush(); out += t; }
-    else buf += t;
-  }
-  flush();
-  return out;
-}
+// แท็กขีดฆ่าจากไฟล์ต้นทาง (Word: ขีดฆ่าข้อความเดิม) — เส้น line-through ของแท็กแม่
+// พาดทับ descendant เสมอ ยกเลิกจากข้างในไม่ได้ตามสเปค CSS ดังนั้น <ins> ห้ามอยู่ใต้แท็กพวกนี้
+const STRIKE_OPEN_RE  = /^<(s|strike|del)[\s>]/i;
+const STRIKE_CLOSE_RE = /^<\/(s|strike|del)[\s>]/i;
 
 /**
  * Diff ระดับ token ด้วย Myers (jsdiff) — เร็วแบบ O(N·D) เมื่อสองเวอร์ชันคล้ายกัน
@@ -148,12 +135,52 @@ function diffHtmlThaiAware(oldHtml, newHtml) {
   const ops = diffTokens(tokenize(oldHtml), tokenize(newHtml));
 
   let out = '';
+  // stack ของแท็กขีดฆ่าที่ "เปิดค้างอยู่" ณ ตำแหน่งปัจจุบันของ output
+  const strikeStack = [];
+  const trackTag = (t) => {
+    const mo = t.match(STRIKE_OPEN_RE);
+    if (mo) { strikeStack.push(mo[1].toLowerCase()); return; }
+    const mc = t.match(STRIKE_CLOSE_RE);
+    if (mc) {
+      const i = strikeStack.lastIndexOf(mc[1].toLowerCase());
+      if (i !== -1) strikeStack.splice(i, 1);
+    }
+  };
+
+  // ครอบ token run ด้วย <ins>/<del> โดยไม่ครอบทับแท็กโครงสร้าง
+  // แท็กถูกปล่อยผ่านนอกแท็ก diff → HTML ยัง valid (ไม่ตัดกลาง <table>/<tr>/<td>)
+  const emitRun = (tokens, tag, cssClass) => {
+    let buf = '';
+    const flush = () => {
+      if (!buf) return;
+      if (tag === 'ins' && strikeStack.length > 0) {
+        // ข้อความเพิ่มดันอยู่ในช่วงขีดฆ่าของไฟล์ต้นทาง (เช่น Word สืบทอด strikethrough
+        // ตอนพิมพ์ต่อท้ายคำที่ขีดฆ่า) → ปิดแท็กขีดฆ่าก่อนวาง ins แล้วเปิดกลับ
+        // ไม่งั้นเส้นขีดฆ่าจะพาดทับข้อความเพิ่ม ทั้งที่ควรเป็นไฮไลต์เขียวล้วน
+        const close  = [...strikeStack].reverse().map(n => `</${n}>`).join('');
+        const reopen = strikeStack.map(n => `<${n}>`).join('');
+        out += `${close}<${tag} class="${cssClass}">${buf}</${tag}>${reopen}`;
+      } else {
+        out += `<${tag} class="${cssClass}">${buf}</${tag}>`;
+      }
+      buf = '';
+    };
+    for (const t of tokens) {
+      if (isTag(t)) { flush(); out += t; trackTag(t); }
+      else buf += t;
+    }
+    flush();
+  };
+
   for (const op of ops) {
-    if (op.type === 'equal') out += op.tokens.join('');
-    else if (op.type === 'insert') out += wrapRun(op.tokens, 'ins', 'diffins');
-    else out += wrapRun(op.tokens, 'del', 'diffdel');
+    if (op.type === 'equal') {
+      for (const t of op.tokens) { out += t; if (isTag(t)) trackTag(t); }
+    }
+    else if (op.type === 'insert') emitRun(op.tokens, 'ins', 'diffins');
+    else emitRun(op.tokens, 'del', 'diffdel');
   }
-  return out;
+  // เก็บกวาดแท็กขีดฆ่าว่างเปล่าที่เหลือจากการย้าย ins ออก (เช่น <s></s>)
+  return out.replace(/<(s|strike|del)>\s*<\/\1>/gi, '');
 }
 
 module.exports = { diffHtmlThaiAware, tokenize };
