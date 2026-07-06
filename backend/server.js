@@ -14,6 +14,16 @@ const PORT = process.env.PORT || 5000;
 async function runMigrations() {
   const db = process.env.DB_NAME || 'curriculum_db';
 
+  // migration ทั้งหมดมีไว้เติม column ให้ "DB เก่า" เท่านั้น — DB ใหม่ (เช่น deploy ครั้งแรก)
+  // ตารางยังไม่ถูกสร้าง ห้าม ALTER เด็ดขาด ให้ sequelize.sync() สร้างตารางพร้อม column ครบเอง
+  const tableExists = async (table) => {
+    const [r] = await sequelize.query(`
+      SELECT COUNT(*) AS cnt FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = '${db}' AND TABLE_NAME = '${table}'
+    `);
+    return r[0].cnt > 0;
+  };
+
   // เช็คว่า column source_type มีอยู่ใน committee_documents แล้วหรือยัง
   const [rows] = await sequelize.query(`
     SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
@@ -21,7 +31,7 @@ async function runMigrations() {
       AND TABLE_NAME   = 'committee_documents'
       AND COLUMN_NAME  = 'source_type'
   `);
-  if (rows[0].cnt === 0) {
+  if (rows[0].cnt === 0 && await tableExists('committee_documents')) {
     // เพิ่ม source_type และ document_id เพื่อรองรับเอกสารจาก workspace
     await sequelize.query(`
       ALTER TABLE committee_documents
@@ -40,7 +50,7 @@ async function runMigrations() {
       AND TABLE_NAME   = 'curricula'
       AND COLUMN_NAME  = 'status_changed_at'
   `);
-  if (curriculaRows[0].cnt === 0) {
+  if (curriculaRows[0].cnt === 0 && await tableExists('curricula')) {
     await sequelize.query(`
       ALTER TABLE curricula 
       ADD COLUMN status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER status;
@@ -58,7 +68,7 @@ async function runMigrations() {
       AND TABLE_NAME   = 'users'
       AND COLUMN_NAME  = 'academic_position'
   `);
-  if (academicRows[0].cnt === 0) {
+  if (academicRows[0].cnt === 0 && await tableExists('users')) {
     await sequelize.query(`
       ALTER TABLE users
       ADD COLUMN academic_position VARCHAR(100) NULL AFTER position;
@@ -76,7 +86,7 @@ async function runMigrations() {
       AND TABLE_NAME   = 'users'
       AND COLUMN_NAME  = 'token_version'
   `);
-  if (tvRows[0].cnt === 0) {
+  if (tvRows[0].cnt === 0 && await tableExists('users')) {
     await sequelize.query(`
       ALTER TABLE users
       ADD COLUMN token_version INT NOT NULL DEFAULT 0 AFTER locked_until;
@@ -91,7 +101,7 @@ async function runMigrations() {
       AND TABLE_NAME   = 'audit_logs'
       AND COLUMN_NAME  = 'user_agent'
   `);
-  if (uaRows[0].cnt === 0) {
+  if (uaRows[0].cnt === 0 && await tableExists('audit_logs')) {
     await sequelize.query(`
       ALTER TABLE audit_logs
       ADD COLUMN user_agent VARCHAR(512) NULL AFTER ip_address;
