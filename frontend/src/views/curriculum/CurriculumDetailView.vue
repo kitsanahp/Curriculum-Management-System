@@ -1,222 +1,201 @@
 <template>
   <div v-if="curriculumStore.loading" class="space-y-6">
-    <div class="h-12 bg-white rounded-xl border border-gray-200 w-3/4 animate-pulse"></div>
+    <div class="h-12 bg-white rounded-2xl border border-gray-200 w-3/4 animate-pulse"></div>
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
-      <div class="h-96 bg-white rounded-xl border border-gray-200 animate-pulse"></div>
-      <div class="h-96 bg-white rounded-xl border border-gray-200 animate-pulse"></div>
+      <div class="h-96 bg-white rounded-2xl border border-gray-200 animate-pulse"></div>
+      <div class="h-96 bg-white rounded-2xl border border-gray-200 animate-pulse"></div>
     </div>
   </div>
   
   <div v-else-if="!c" class="flex flex-col items-center justify-center min-h-[60vh] text-center">
     <div class="bg-gray-50 p-8 rounded-full mb-4">
-      <PhFile class="w-12 h-12 text-gray-300" />
+      <PhFile class="w-12 h-12 text-gray-300" aria-hidden="true" />
     </div>
     <h3 class="text-lg font-bold text-gray-900">ไม่พบหลักสูตร</h3>
     <p class="text-sm text-gray-500 mt-1">ข้อมูลอาจถูกลบหรือท่านไม่มีสิทธิ์เข้าถึง</p>
-    <button @click="router.back()" class="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 active:scale-[0.97] transition-all duration-150 ease-ios">
-      <PhCaretLeft class="w-4 h-4" />
+    <button @click="router.back()" class="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 active:scale-[0.97] transition-all duration-150 ease-ios focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+      <PhCaretLeft class="w-4 h-4" aria-hidden="true" />
       กลับไปหน้าก่อนหน้า
     </button>
   </div>
 
   <div v-else class="space-y-5">
     <!-- Hero Header Card -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 ">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 ">
 
-      <!-- Title + Actions -->
-      <div class="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
-        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <!-- Title + Status -->
+      <div class="px-4 sm:px-6 lg:px-8 pt-6 pb-5">
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
 
-          <!-- Left: back button + title info -->
-          <div class="flex items-start gap-3 flex-1 min-w-0">
-            <button @click="router.back()" aria-label="ย้อนกลับ"
-              class="mt-0.5 flex-shrink-0 w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-primary-700 hover:bg-primary-50 hover:border-primary-100 transition-all duration-150 ease-ios focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 active:scale-[0.88]">
-              <PhCaretLeft class="w-4 h-4" />
+          <!-- Left: back button + dept icon tile + identity -->
+          <div class="flex items-start gap-3 sm:gap-3.5 flex-1 min-w-0">
+            <button type="button" @click="router.back()" aria-label="ย้อนกลับ"
+              class="cursor-pointer shrink-0 w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-500 hover:text-primary-700 hover:bg-primary-50 hover:border-primary-100 active:scale-[0.88] transition-all duration-150 ease-ios focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+              <PhCaretLeft class="w-5 h-5" />
             </button>
+
             <div class="flex-1 min-w-0">
-              <!-- h1 มาก่อน — Visual Hierarchy: primary content ต้องอ่านก่อน metadata -->
-              <h1 class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight leading-tight mb-1">
+              <p class="text-sm font-medium text-gray-500 truncate">{{ c.department?.name || 'ไม่ระบุภาควิชา' }}</p>
+              <h1 class="text-lg sm:text-xl font-bold text-gray-900 leading-snug mt-1">
                 {{ c.field_of_study ? `สาขาวิชา${c.field_of_study}` : c.degree_name || 'ไม่ระบุชื่อหลักสูตร' }}
               </h1>
-              <p v-if="c.field_of_study && c.degree_name" class="text-sm text-gray-600 truncate mb-2">
+              <p v-if="c.field_of_study && c.degree_name" class="text-sm sm:text-base font-medium text-gray-600 mt-1 truncate">
                 {{ c.degree_name }}
               </p>
-              <p class="text-sm text-gray-500 flex items-center gap-1.5 mb-3">
-                <component v-if="getDept(c.department?.name)" :is="getDept(c.department?.name).icon"
-                  weight="bold" class="w-3.5 h-3.5 shrink-0"
-                  :style="{ color: getDept(c.department?.name).color }" />
-                {{ c.department?.name || 'ไม่ระบุภาควิชา' }}
-              </p>
 
-              <!-- badges มาหลัง h1 — metadata เป็น context เสริม ไม่ใช่ primary -->
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+              <!-- Meta badges (ภาควิชาย้ายไปเป็น eyebrow ด้านบน) -->
+              <div class="flex flex-wrap items-center gap-1.5 mt-3">
+                <span :class="[
+                  'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold',
+                  { bachelor: 'bg-blue-50 text-blue-700', master: 'bg-purple-50 text-purple-700', doctoral: 'bg-indigo-50 text-indigo-700' }[c.degree_level] || 'bg-gray-100 text-gray-500'
+                ]">
                   {{ { bachelor: 'ปริญญาตรี', master: 'ปริญญาโท', doctoral: 'ปริญญาเอก' }[c.degree_level] }}
                 </span>
-                <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
-                  ปีหลักสูตร {{ c.curriculum_year }}
-                </span>
                 <span :class="[
-                  'inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
+                  'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
                   c.curriculum_type === 'new'
                     ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
                     : 'bg-sky-50 text-sky-700 ring-sky-600/20'
                 ]">
                   {{ c.curriculum_type === 'new' ? 'หลักสูตรใหม่' : 'หลักสูตรปรับปรุง' }}
                 </span>
-                <StatusBadge :status="c.status" :curriculum="c" />
-              </div>
-
-              <!-- under_committee info banner -->
-              <div v-if="c.status === 'under_committee'"
-                class="mt-2.5 inline-flex items-center gap-2 text-xs text-sky-700 bg-sky-50 border border-sky-100 rounded-lg px-3 py-1.5">
-                <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 2a10 10 0 110 20A10 10 0 0112 2zm0 2a8 8 0 100 16A8 8 0 0012 4zm0 3a1 1 0 011 1v4a1 1 0 01-2 0V8a1 1 0 011-1zm0 8a1.25 1.25 0 110 2.5A1.25 1.25 0 0112 15z"/>
-                </svg>
-                ขณะนี้อยู่ระหว่างการพิจารณา ท่านไม่ต้องดำเนินการใดๆ
+                <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                  ปีหลักสูตร {{ c.curriculum_year }}
+                </span>
               </div>
             </div>
+          </div>
+
+          <!-- Right: status -->
+          <div class="flex items-center gap-2 shrink-0 self-start flex-wrap justify-end">
+            <RevisionCycleBadge :curriculum-year="c.curriculum_year" />
+            <StatusBadge :status="c.status" :curriculum="c" />
           </div>
 
         </div>
       </div>
 
-      <!-- Tab Navigation — sliding indicator -->
-      <div class="border-t border-gray-100 relative">
-        <!-- gradient fade-out ขวา (mobile scroll hint) -->
-        <div class="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 lg:hidden dark:from-[var(--dm-surface)]"></div>
-
-        <nav
-          ref="tabNavRef"
-          class="relative flex overflow-x-auto no-scrollbar px-4 sm:px-6 lg:px-8 pr-10 lg:pr-8"
-          aria-label="Tabs">
-
-          <!-- ✨ Sliding underline indicator — เลื่อนลื่นตามแท็บ -->
-          <div
-            class="tab-slider-indicator"
-            :style="tabIndicatorStyle"
-          />
-
+      <!-- Tab Navigation (Clean Underline Style - Like Image) -->
+      <div class="border-t border-gray-200 px-4 sm:px-6 bg-white rounded-b-2xl">
+        <nav class="flex flex-nowrap gap-5 sm:gap-8 overflow-x-auto -mb-px" style="scrollbar-width:none" aria-label="Tabs" role="tablist">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            :ref="el => { if (el) tabButtonRefs[tab.key] = el }"
             @click="switchTab(tab.key)"
-            :class="[
-              activeTab === tab.key
-                ? 'text-primary-700'
-                : 'text-gray-500 hover:text-gray-700',
-              'tab-btn inline-flex items-center gap-2 px-3 py-3.5 text-sm font-bold whitespace-nowrap select-none -mb-px outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-inset rounded-t'
-            ]"
             :aria-selected="activeTab === tab.key"
-            role="tab">
-
-            <!-- ✨ Icon spring เมื่อ active -->
-            <component
-              :is="tab.icon"
-              :class="[
-                'w-4 h-4 shrink-0 transition-all duration-200',
-                activeTab === tab.key
-                  ? 'text-primary-600 tab-icon-active'
-                  : 'text-gray-400'
-              ]"
-              aria-hidden="true"
-            />
-
-            <span class="flex flex-col items-start">
-              <span>{{ tab.label }}</span>
-              <!-- ✨ Subtitle — fade+slide-down เมื่อโผล่ -->
-              <Transition name="tab-sub" mode="out-in">
-                <span
-                  v-if="activeTab === tab.key"
-                  :key="tab.key"
-                  class="text-[10px] font-normal text-primary-400 leading-none mt-0.5">
-                  {{ tab.desc }}
-                </span>
-              </Transition>
-            </span>
+            role="tab"
+            :class="[
+              'group inline-flex items-center gap-2 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold whitespace-nowrap cursor-pointer transition-all duration-200 ease-ios outline-none select-none border-b-2',
+              activeTab === tab.key
+                ? 'border-primary-600 text-primary-600 font-bold'
+                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            ]">
+            <span>{{ tab.label }}</span>
           </button>
         </nav>
       </div>
     </div>
 
-    <!-- Action Banner + Action Buttons -->
-    <div v-if="actionBanner" :class="['animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl ring-1 overflow-hidden', bannerStyle.ring]">
-      <!-- Banner: icon + text + action button in one row -->
-      <div :class="['px-5 py-4 flex items-center gap-4', bannerStyle.bg]">
-        <div :class="['w-8 h-8 rounded-lg flex items-center justify-center shrink-0', bannerStyle.iconBg]">
-          <component :is="actionBanner.icon" :class="['h-4 w-4', bannerStyle.icon]" aria-hidden="true" />
+    <!-- Workflow action bar (decision zone) — Clean Card with Amber Ribbon Badge -->
+    <div v-if="hasActions"
+      class="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 sm:px-5 lg:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
+
+        <!-- Context: Yellow Arrow Badge Style + Underneath Red Description -->
+        <div v-if="actionContext" class="flex flex-col items-start min-w-0">
+          <!-- Ribbon Badge (Thinner font, clean arrow tag) -->
+          <div class="inline-flex items-stretch rounded-lg overflow-hidden border border-amber-300 bg-white shadow-2xs">
+            <!-- Left Amber Box with Arrow -->
+            <div class="bg-amber-500 text-white font-medium text-xs pl-3 pr-4 py-1 flex items-center gap-1.5 shrink-0"
+                 style="clip-path: polygon(0% 0%, 88% 0%, 100% 50%, 88% 100%, 0% 100%); min-width: 88px; justify-content: center;">
+              <PhListChecks class="w-3.5 h-3.5 shrink-0" weight="bold" />
+              <span>ขั้นตอนถัดไป</span>
+            </div>
+            <!-- Right Box (Title) -->
+            <div class="bg-amber-50/80 text-amber-900 font-semibold text-xs sm:text-[13px] px-3 py-1 flex items-center">
+              <span>{{ actionContext.title }}</span>
+            </div>
+          </div>
+
+          <!-- Subtitle hint underneath in red, thinner font -->
+          <p class="text-xs sm:text-[13px] font-normal text-red-500 leading-relaxed mt-1.5 min-w-0">
+            {{ actionContext.hint }}
+          </p>
         </div>
-        <div class="flex-1 min-w-0">
-          <p :class="['text-[13px] font-bold', bannerStyle.title]">{{ actionBanner.title }}</p>
-          <p :class="['mt-0.5 text-sm leading-relaxed', bannerStyle.body]">{{ actionBanner.body }}</p>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 flex-wrap sm:flex-nowrap shrink-0">
+          <!-- Faculty: ส่งหลักสูตรครั้งแรก -->
+          <span
+            v-if="authStore.isFaculty && (c.status === 'pending_department' || (c.status === 'revision' && !c.current_committee_step_id))"
+            :data-tooltip="!hasDocuments ? 'กรุณาอัปโหลดเอกสารก่อนส่งหลักสูตร' : undefined"
+            data-tooltip-left>
+            <button
+              :disabled="submitting || !hasDocuments"
+              @click="handleSubmit"
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              <PhPaperPlaneTilt class="w-4 h-4" weight="bold" aria-hidden="true" />
+              ส่งหลักสูตรเพื่อตรวจสอบ
+            </button>
+          </span>
+
+          <!-- Faculty: ส่งให้งานหลักสูตรตรวจสอบ (หลังคณะกรรมการตีกลับ) -->
+          <span
+            v-if="authStore.isFaculty && c.status === 'revision' && c.current_committee_step_id"
+            :data-tooltip="!hasDocuments ? 'กรุณาอัปโหลดเอกสารก่อนส่งหลักสูตร' : undefined"
+            data-tooltip-left>
+            <button
+              :disabled="submitting || !hasDocuments"
+              @click="handleResubmit"
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              <PhPaperPlaneTilt class="w-4 h-4" weight="bold" aria-hidden="true" />
+              ส่งให้งานหลักสูตรตรวจสอบ
+            </button>
+          </span>
+
+          <!-- Admin: ตรวจสอบครั้งแรก (department_submitted) -->
+          <template v-if="authStore.isAdmin && c.status === 'department_submitted'">
+            <button :disabled="submitting" @click="showRejectModal = true"
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 h-[44px] text-sm font-bold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 hover:ring-red-400 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              <PhArrowCounterClockwise class="w-4 h-4" weight="bold" aria-hidden="true" />
+              ส่งกลับแก้ไข
+            </button>
+            <button :disabled="submitting" @click="handleApprove"
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              <PhCheck class="w-4 h-4" weight="bold" aria-hidden="true" />
+              นำเข้าที่ประชุมคณะกรรมการ
+            </button>
+          </template>
+
+          <!-- Admin: ตรวจสอบหลังคณะกรรมการตีกลับ (pending_admin_recheck) -->
+          <template v-if="authStore.isAdmin && c.status === 'pending_admin_recheck'">
+            <button :disabled="submitting" @click="showRecheckRejectModal = true"
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 h-[44px] text-sm font-bold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 hover:ring-red-400 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              <PhArrowCounterClockwise class="w-4 h-4" weight="bold" aria-hidden="true" />
+              ส่งกลับแก้ไข
+            </button>
+            <button :disabled="submitting" @click="handleApproveRecheck"
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              <PhCheck class="w-4 h-4" weight="bold" aria-hidden="true" />
+              นำเข้าที่ประชุมคณะกรรมการ
+            </button>
+          </template>
         </div>
-
-        <!-- Faculty: ส่งหลักสูตรครั้งแรก -->
-        <button
-          v-if="authStore.isFaculty && (c.status === 'pending_department' || (c.status === 'revision' && !c.current_committee_step_id))"
-          :disabled="submitting"
-          @click="handleSubmit"
-          class="shrink-0 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 transition-all duration-150 ease-ios">
-          <PhPaperPlaneTilt class="w-4 h-4" aria-hidden="true" />
-          ส่งหลักสูตรเพื่อตรวจสอบ
-        </button>
-
-        <!-- Faculty: ส่งให้งานหลักสูตรตรวจสอบ (หลังคณะกรรมการตีกลับ) -->
-        <button
-          v-if="authStore.isFaculty && c.status === 'revision' && c.current_committee_step_id"
-          :disabled="submitting"
-          @click="handleResubmit"
-          class="shrink-0 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 transition-all duration-150 ease-ios">
-          <PhPaperPlaneTilt class="w-4 h-4" aria-hidden="true" />
-          ส่งให้งานหลักสูตรตรวจสอบ
-        </button>
-
-        <!-- Admin: ตรวจสอบครั้งแรก (department_submitted) -->
-        <template v-if="authStore.isAdmin && c.status === 'department_submitted'">
-          <button :disabled="submitting" @click="showRejectModal = true"
-            class="shrink-0 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 active:scale-[0.97] disabled:opacity-60 transition-all duration-150 ease-ios">
-            <PhArrowCounterClockwise class="w-4 h-4" aria-hidden="true" />
-            ส่งกลับแก้ไข
-          </button>
-          <button :disabled="submitting" @click="handleApprove"
-            class="shrink-0 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-500 active:scale-[0.97] disabled:opacity-60 transition-all duration-150 ease-ios">
-            <PhCheck class="w-4 h-4" aria-hidden="true" />
-            นำเข้าที่ประชุมคณะกรรมการ
-          </button>
-        </template>
-
-        <!-- Admin: ตรวจสอบหลังคณะกรรมการตีกลับ (pending_admin_recheck) -->
-        <template v-if="authStore.isAdmin && c.status === 'pending_admin_recheck'">
-          <button :disabled="submitting" @click="showRecheckRejectModal = true"
-            class="shrink-0 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 active:scale-[0.97] disabled:opacity-60 transition-all duration-150 ease-ios">
-            <PhArrowCounterClockwise class="w-4 h-4" aria-hidden="true" />
-            ส่งกลับแก้ไข
-          </button>
-          <button :disabled="submitting" @click="handleApproveRecheck"
-            class="shrink-0 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-500 active:scale-[0.97] disabled:opacity-60 transition-all duration-150 ease-ios">
-            <PhCheck class="w-4 h-4" aria-hidden="true" />
-            นำเข้าที่ประชุมคณะกรรมการ
-          </button>
-        </template>
-
       </div>
-    </div>
+    <!-- /workflow action bar card -->
 
     <!-- Main Grid Layout -->
-    <div :class="['grid grid-cols-1 gap-5 items-start', activeTab === 'info' ? 'lg:grid-cols-[1fr_260px]' : '']">
+    <div :class="['grid grid-cols-1 gap-5 items-start', activeTab === 'info' ? 'lg:grid-cols-[1fr_minmax(280px,360px)]' : '']">
 
-      <!-- Left/Main Column (Tab Content) — ✨ cross-fade เมื่อเปลี่ยนแท็บ -->
+      <!-- Left/Main Column (Tab Content) -->
       <div class="min-w-0">
-        <Transition name="tab-content" mode="out-in">
-        <div :key="activeTab" class="space-y-4">
+        <div class="space-y-5">
 
         <!-- Tab: Info -->
         <template v-if="activeTab === 'info'">
 
           <!-- Detailed Info Card -->
-          <section class="bg-white rounded-xl border border-gray-200 ">
-            <div class="px-6 py-3 flex items-center justify-between border-b border-gray-100">
+          <section class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <div class="px-6 py-4 flex items-center justify-between border-b border-gray-100">
               <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
                 <PhFileText class="w-4 h-4 text-gray-400 shrink-0" />
                 ข้อมูลหลักสูตร
@@ -226,67 +205,124 @@
                 แก้ไข
               </button>
             </div>
-            <!-- View Mode -->
-            <div v-if="!editingInfo" class="px-6 py-4">
-              <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                <div class="sm:col-span-2">
-                  <dt class="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1.5">
-                    <PhGraduationCap class="w-3.5 h-3.5 shrink-0" />
-                    ชื่อปริญญา (ภาษาไทย)
-                  </dt>
-                  <dd class="text-base font-bold text-gray-900 flex items-center gap-2 flex-wrap">
-                    {{ c.degree_name || '-' }}
-                    <span v-if="c.degree_name_abbr" class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-lg">
-                      {{ c.degree_name_abbr }}
-                    </span>
+            <!-- View Mode — Perfectly aligned with Edit Mode -->
+            <div v-if="!editingInfo" class="px-6 py-5">
+              <dl class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <!-- ระดับปริญญา -->
+                <div>
+                  <dt class="block text-sm font-semibold text-gray-700 mb-1.5">ระดับปริญญา</dt>
+                  <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300">
+                    {{ { bachelor: 'ปริญญาตรี', master: 'ปริญญาโท', doctoral: 'ปริญญาเอก' }[c.degree_level] || '-' }}
                   </dd>
                 </div>
-                <div v-if="c.field_of_study">
-                  <dt class="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1.5">
-                    <PhBook class="w-3.5 h-3.5 shrink-0" />
-                    สาขาวิชา
-                  </dt>
-                  <dd class="text-base font-semibold text-gray-800">{{ c.field_of_study }}</dd>
-                </div>
+                <!-- ภาควิชา/งานบริการการศึกษา -->
                 <div>
-                  <dt class="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1.5">
-                    <PhGraduationCap class="w-3.5 h-3.5 shrink-0" />
-                    ระดับปริญญา
-                  </dt>
-                  <dd class="text-base font-semibold text-gray-800">{{ { bachelor: 'ปริญญาตรี', master: 'ปริญญาโท', doctoral: 'ปริญญาเอก' }[c.degree_level] }}</dd>
+                  <dt class="block text-sm font-semibold text-gray-700 mb-1.5">ภาควิชา/งานบริการการศึกษา</dt>
+                  <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300">
+                    {{ c.department?.name || '-' }}
+                  </dd>
+                </div>
+                <!-- สาขาวิชา -->
+                <div>
+                  <dt class="block text-sm font-semibold text-gray-700 mb-1.5">สาขาวิชา</dt>
+                  <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300">
+                    {{ c.field_of_study || '-' }}
+                  </dd>
+                </div>
+                <!-- ประเภทหลักสูตร -->
+                <div>
+                  <dt class="block text-sm font-semibold text-gray-700 mb-1.5">ประเภทหลักสูตร</dt>
+                  <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300">
+                    {{ c.curriculum_type === 'new' ? 'หลักสูตรใหม่' : 'หลักสูตรปรับปรุง' }}
+                  </dd>
+                </div>
+                <!-- ปีหลักสูตร -->
+                <div>
+                  <dt class="block text-sm font-semibold text-gray-700 mb-1.5">ปีหลักสูตร</dt>
+                  <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300 tabular-nums">
+                    {{ c.curriculum_year || '-' }}
+                  </dd>
+                </div>
+                <!-- กำหนดส่ง -->
+                <div>
+                  <dt class="block text-sm font-semibold text-gray-700 mb-1.5">กำหนดส่ง</dt>
+                  <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300">
+                    {{ c.deadline ? formatThaiDate(c.deadline) : '-' }}
+                  </dd>
+                </div>
+                <!-- ชื่อปริญญา + ชื่อย่อ (แถวเดียวกัน: ชื่อ 2/3, ย่อ 1/3) -->
+                <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  <div class="sm:col-span-2">
+                    <dt class="block text-sm font-semibold text-gray-700 mb-1.5">ชื่อปริญญา (ภาษาไทย)</dt>
+                    <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300">
+                      {{ c.degree_name || '-' }}
+                    </dd>
+                  </div>
+                  <div class="sm:col-span-1">
+                    <dt class="block text-sm font-semibold text-gray-700 mb-1.5">ชื่อย่อปริญญา</dt>
+                    <dd class="block w-full rounded-lg border border-gray-200 bg-gray-50/70 py-3 px-3 text-sm font-semibold text-gray-900 transition-all hover:bg-white hover:border-gray-300">
+                      {{ c.degree_name_abbr || '-' }}
+                    </dd>
+                  </div>
                 </div>
               </dl>
             </div>
             <!-- Edit Mode -->
             <div v-else class="px-6 py-5 bg-gray-50/30">
-               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="sm:col-span-2">
-                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">ชื่อปริญญา (ภาษาไทย)</label>
-                  <input v-model="editForm.degree_name" type="text" class="block w-full rounded-xl border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 text-sm transition-all" />
-                </div>
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <!-- ระดับปริญญา (โครงสร้าง — แก้ไม่ได้) -->
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">ชื่อย่อ</label>
-                  <input v-model="editForm.degree_name_abbr" type="text" class="block w-full rounded-xl border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 text-sm transition-all" />
+                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">ระดับปริญญา</label>
+                  <div class="block w-full rounded-lg border border-gray-200 bg-gray-100 py-3 px-3 text-sm text-gray-500">{{ { bachelor: 'ปริญญาตรี', master: 'ปริญญาโท', doctoral: 'ปริญญาเอก' }[c.degree_level] || '-' }}</div>
                 </div>
+                <!-- ภาควิชา (โครงสร้าง — แก้ไม่ได้) -->
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">ภาควิชา/งานบริการการศึกษา</label>
+                  <div class="block w-full rounded-lg border border-gray-200 bg-gray-100 py-3 px-3 text-sm text-gray-500">{{ c.department?.name || '-' }}</div>
+                </div>
+                <!-- สาขาวิชา -->
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">สาขาวิชา</label>
+                  <input v-model="editForm.field_of_study" type="text" class="block w-full rounded-lg border border-gray-300 py-3 px-3 text-gray-900 shadow-sm placeholder:text-gray-400 focus:ring-2 focus:ring-primary-600 focus:border-transparent text-sm transition-all" />
+                </div>
+                <!-- ประเภทหลักสูตร (โครงสร้าง — แก้ไม่ได้) -->
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">ประเภทหลักสูตร</label>
+                  <div class="block w-full rounded-lg border border-gray-200 bg-gray-100 py-3 px-3 text-sm text-gray-500">{{ c.curriculum_type === 'new' ? 'หลักสูตรใหม่' : 'หลักสูตรปรับปรุง' }}</div>
+                </div>
+                <!-- ปีหลักสูตร -->
                 <div>
                   <label class="block text-sm font-semibold text-gray-700 mb-1.5">ปีหลักสูตร</label>
-                  <input v-model="editForm.curriculum_year" type="text" class="block w-full rounded-xl border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 text-sm transition-all" />
+                  <FormCombobox v-model="editForm.curriculum_year" :options="yearOptions" placeholder="เลือกหรือพิมพ์ปีหลักสูตร" />
                 </div>
-                <div class="sm:col-span-2">
-                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">สาขาวิชา</label>
-                  <input v-model="editForm.field_of_study" type="text" class="block w-full rounded-xl border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 text-sm transition-all" />
+                <!-- กำหนดส่ง -->
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-1.5">กำหนดส่ง</label>
+                  <FormDatePicker v-model="editForm.deadline" placeholder="เลือกวันที่กำหนดส่ง" />
+                </div>
+                <!-- ชื่อปริญญา + ชื่อย่อ (แถวเดียวกัน: ชื่อ 2/3, ย่อ 1/3) -->
+                <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  <div class="sm:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">ชื่อปริญญา (ภาษาไทย)</label>
+                    <input v-model="editForm.degree_name" type="text" class="block w-full rounded-lg border border-gray-300 py-3 px-3 text-gray-900 shadow-sm placeholder:text-gray-400 focus:ring-2 focus:ring-primary-600 focus:border-transparent text-sm transition-all" />
+                  </div>
+                  <div class="sm:col-span-1">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">ชื่อย่อปริญญา</label>
+                    <input v-model="editForm.degree_name_abbr" type="text" class="block w-full rounded-lg border border-gray-300 py-3 px-3 text-gray-900 shadow-sm placeholder:text-gray-400 focus:ring-2 focus:ring-primary-600 focus:border-transparent text-sm transition-all" />
+                  </div>
                 </div>
                </div>
-               <div class="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-                  <button type="button" @click="cancelEditInfo" class="text-sm font-bold text-gray-500 hover:text-gray-700">ยกเลิก</button>
-                  <button type="button" @click="saveInfoBridge" :disabled="savingInfo" class="rounded-xl bg-primary-600 px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-primary-500 transition-all">บันทึกข้อมูล</button>
+               <p class="mt-4 text-xs text-red-500">หมายเหตุ: ระดับปริญญา ภาควิชา และประเภทหลักสูตร เป็นข้อมูลที่กำหนดไว้ตั้งแต่ขั้นตอนการสร้างหลักสูตร จึงไม่สามารถแก้ไขได้</p>
+               <div class="mt-4 flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
+                  <button type="button" @click="cancelEditInfo" class="cursor-pointer rounded-lg border-2 border-red-400 bg-white px-5 py-2 text-sm font-bold text-red-500 hover:bg-red-50 hover:border-red-500 shadow-2xs active:scale-[0.97] transition-all duration-150 ease-ios">ยกเลิก</button>
+                  <button type="button" @click="saveInfoBridge" :disabled="savingInfo" class="cursor-pointer rounded-lg bg-primary-600 px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-primary-500 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-150 ease-ios">บันทึกข้อมูล</button>
                </div>
             </div>
           </section>
 
           <!-- Team Section -->
-          <section class="bg-white rounded-xl border border-gray-200 ">
-            <div class="px-6 py-3 flex items-center justify-between border-b border-gray-100">
+          <section class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <div class="px-6 py-4 flex items-center justify-between border-b border-gray-100">
               <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
                 <PhUsersThree class="w-4 h-4 text-gray-400 shrink-0" />
                 ทีมผู้รับผิดชอบหลักสูตร
@@ -296,23 +332,30 @@
                 จัดการรายชื่อ
               </button>
             </div>
-            <ul v-if="!editingTeam" role="list" class="divide-y divide-gray-50">
-              <li v-for="member in c.team" :key="member.id" class="px-6 py-3.5 flex items-center gap-4 hover:bg-gray-50/50 transition-colors">
-                <UserAvatar :name="member.name" size="sm" class="shrink-0 ring-2 ring-gray-100" />
+            <div v-if="!editingTeam" role="list" class="p-5 sm:p-6 space-y-2">
+              <div v-for="member in c.team" :key="member.id" role="listitem"
+                class="flex items-center gap-3.5 rounded-xl border border-gray-100/80 bg-gray-50/80 px-3.5 py-2.5 hover:bg-white hover:border-gray-200 hover:shadow-xs transition-all duration-200 group">
+                <UserAvatar :name="member.name" size="sm" class="shrink-0 ring-2 ring-white shadow-2xs group-hover:scale-105 transition-transform duration-200" />
                 <div class="min-w-0 flex-1">
-                  <p class="text-base font-semibold text-gray-900 leading-tight">
+                  <p class="text-sm font-semibold text-gray-800 leading-snug group-hover:text-primary-700 transition-colors">
                     {{ member.position ? `${member.position} ` : '' }}{{ member.name }}
                   </p>
-                  <p v-if="member.email" class="mt-0.5 text-sm text-gray-500 flex items-center gap-1 truncate">
-                    <PhEnvelope class="w-3 h-3 shrink-0" />{{ member.email }}
+                  <p v-if="member.email" class="mt-0.5 text-xs text-gray-500 flex items-center gap-1.5 truncate">
+                    <PhEnvelope class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-500 transition-colors shrink-0" />{{ member.email }}
                   </p>
                 </div>
-                <span :class="[ROLE_BADGE[member.role_in_curriculum], 'shrink-0 inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset']">
+                <span :class="[ROLE_BADGE[member.role_in_curriculum], 'shrink-0 inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset shadow-2xs']">
                   {{ ROLE_LABELS[member.role_in_curriculum] }}
                 </span>
-              </li>
-            </ul>
+              </div>
+              <p v-if="!c.team?.length" class="text-sm text-gray-400 text-center py-6">ยังไม่มีรายชื่อทีม</p>
+            </div>
             <div v-else>
+              <!-- Toggle: กรองอาจารย์ตามภาควิชา / แสดงข้ามภาควิชา -->
+              <label v-if="c?.department_id" class="flex items-center justify-end gap-2 px-6 pt-3 text-xs font-medium text-gray-500 cursor-pointer select-none">
+                <input type="checkbox" v-model="showAllTeamDepts" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                แสดงอาจารย์ทุกภาควิชา
+              </label>
               <!-- Team member rows -->
               <div v-for="(member, idx) in teamForm" :key="idx"
                 class="px-6 py-4 border-b border-gray-50 last:border-b-0 space-y-3">
@@ -322,9 +365,8 @@
                     <FormSelect
                       v-model="member.role_in_curriculum"
                       :options="[
-                        { label: 'ประธานหลักสูตร',     value: 'president'    },
-                        { label: 'เลขาธิการหลักสูตร',  value: 'secretary'    },
-                        { label: 'อาจารย์ผู้รับผิดชอบ', value: 'responsible'  },
+                        { label: 'ประธานหลักสูตร',          value: 'president'    },
+                        { label: 'อาจารย์ผู้รับผิดชอบหลักสูตร', value: 'responsible'  },
                       ]"
                     />
                   </div>
@@ -338,13 +380,13 @@
                   <input v-model="member.name" type="text" placeholder="ชื่อ-นามสกุล *"
                     @focus="focusedTeamMember = idx"
                     @blur="() => setTimeout(() => { if (focusedTeamMember === idx) focusedTeamMember = -1 }, 150)"
-                    class="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
+                    class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
                   <ul v-if="focusedTeamMember === idx && getTeamSuggestions(idx).length"
                     class="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-lg border border-gray-100 py-1 max-h-48 overflow-y-auto">
                     <li v-for="u in getTeamSuggestions(idx)" :key="u.id">
                       <button type="button" @mousedown.prevent="selectTeamMember(idx, u); focusedTeamMember = -1"
                         class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors">
-                        <span class="font-medium text-gray-900">{{ u.name }}</span>
+                        <span class="font-medium text-gray-900">{{ formatUserName(u) }}</span>
                         <span v-if="u.email" class="ml-2 text-xs text-gray-400">{{ u.email }}</span>
                       </button>
                     </li>
@@ -352,10 +394,18 @@
                 </div>
                 <!-- Position + Email -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input v-model="member.position" type="text" placeholder="ตำแหน่ง เช่น ผศ.ดร."
-                    class="rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
+                  <FormSelect
+                    v-model="member.position"
+                    :options="[
+                      { label: 'ไม่ระบุ', value: '' },
+                      { label: 'อาจารย์', value: 'อาจารย์' },
+                      { label: 'ผู้ช่วยศาสตราจารย์', value: 'ผู้ช่วยศาสตราจารย์' },
+                      { label: 'รองศาสตราจารย์', value: 'รองศาสตราจารย์' },
+                      { label: 'ศาสตราจารย์', value: 'ศาสตราจารย์' }
+                    ]"
+                  />
                   <input v-model="member.email" type="email" placeholder="อีเมล"
-                    class="rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
+                    class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
                 </div>
               </div>
 
@@ -370,45 +420,46 @@
               </div>
 
               <!-- Save / Cancel -->
-              <div class="px-6 py-4 bg-gray-50/60">
-                <button type="button" @click="saveTeamBridge" :disabled="savingTeam"
-                  class="w-full rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-primary-500 disabled:opacity-60 active:scale-[0.97] transition-all duration-150 ease-ios">
-                  {{ savingTeam ? 'กำลังบันทึก…' : 'บันทึกรายชื่อ' }}
-                </button>
+              <div class="px-6 py-4 bg-gray-50/60 flex items-center justify-end gap-3">
                 <button type="button" @click="cancelEditTeam"
-                  class="w-full mt-3 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-all duration-150 ease-ios">
+                  class="cursor-pointer rounded-lg border-2 border-red-400 bg-white px-6 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 hover:border-red-500 shadow-2xs active:scale-[0.97] transition-all duration-150 ease-ios">
                   ยกเลิก
+                </button>
+                <button type="button" @click="saveTeamBridge" :disabled="savingTeam"
+                  class="cursor-pointer rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-primary-500 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-150 ease-ios">
+                  {{ savingTeam ? 'กำลังบันทึก…' : 'บันทึกรายชื่อ' }}
                 </button>
               </div>
             </div>
           </section>
         </template>
 
-        <template v-else-if="activeTab === 'tqf2'">
-          <TQF2Panel :curriculum-id="c.id" :curriculum="c" @reject="showRejectModal = true" @approve="handleApprove" @uploaded="loadHistory" />
-        </template>
+        <!-- KeepAlive: mount ครั้งเดียว สลับแท็บไม่ remount/ไม่ fetch ซ้ำ (กันกระตุก) -->
+        <KeepAlive>
+          <TQF2Panel v-if="activeTab === 'tqf2'" :curriculum-id="c.id" :curriculum="c" @reject="showRejectModal = true" @approve="handleApprove" @uploaded="onDocumentUploaded" />
+        </KeepAlive>
 
-        <template v-else-if="activeTab === 'documents'">
-          <DocumentsPanel :curriculum-id="c.id" :curriculum="c" @reject="showRejectModal = true" @approve="handleApprove" @uploaded="loadHistory" />
-        </template>
+        <KeepAlive>
+          <DocumentsPanel v-if="activeTab === 'documents'" :curriculum-id="c.id" :curriculum="c" @reject="showRejectModal = true" @approve="handleApprove" @uploaded="onDocumentUploaded" />
+        </KeepAlive>
 
-        <template v-else-if="activeTab === 'committee'">
-          <CommitteePanel :curriculum="c" @curriculum-updated="handleCurriculumUpdated" />
-        </template>
+        <KeepAlive>
+          <CommitteePanel v-if="activeTab === 'committee'" :curriculum="c" @curriculum-updated="handleCurriculumUpdated" />
+        </KeepAlive>
 
-        <template v-else-if="activeTab === 'history'">
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm ">
+        <template v-if="activeTab === 'history'">
+          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm ">
 
             <!-- Card header — same pattern as DocumentsPanel / TQF2Panel -->
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
                   <PhClipboardText class="w-4 h-4 text-gray-400" />
-                  บันทึกกิจกรรม
+                  ประวัติการดำเนินการ
                 </h2>
                 <div class="flex items-center gap-1.5 mt-0.5">
-                  <span v-if="auditLogs.length" class="text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{{ auditLogs.length }} รายการ</span>
-                  <span class="text-sm text-gray-400">ติดตามการเปลี่ยนแปลงทั้งหมด</span>
+                  <span v-if="auditLogs.length" class="text-xs font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{{ auditLogs.length }} รายการ</span>
+                  <span class="text-sm text-gray-500">การดำเนินการทั้งหมดของหลักสูตร</span>
                 </div>
               </div>
               <!-- Active-filter pill + clear — ปรากฏเฉพาะตอนกรองอยู่ -->
@@ -416,7 +467,7 @@
                 <span :class="['inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white shadow-sm ring-1 ring-gray-100', getFilterStyle(activityFilter).text]">
                   <component :is="ACTIVITY_FILTERS.find(f => f.key === activityFilter)?.icon" class="w-3.5 h-3.5" />
                   {{ ACTIVITY_FILTERS.find(f => f.key === activityFilter)?.label }}
-                  <span class="text-[10px] font-bold bg-white/50 px-1 py-px rounded">{{ filteredAuditLogs.length }}</span>
+                  <span class="text-xs font-bold bg-white/50 px-1 py-px rounded">{{ filteredAuditLogs.length }}</span>
                 </span>
                 <button @click="activityFilter = 'all'"
                   class="p-1 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 active:scale-[0.88] transition-all duration-150 ease-ios">
@@ -444,7 +495,7 @@
                   {{ f.label }}
                   <span v-if="filterCount(f.key) > 0"
                     :class="[
-                      'tabular-nums text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full inline-flex items-center justify-center',
+                      'tabular-nums text-xs font-bold min-w-[16px] h-4 px-1 rounded-full inline-flex items-center justify-center',
                       activityFilter === f.key ? 'bg-gray-200 text-gray-500' : 'bg-gray-100 text-gray-400'
                     ]">{{ filterCount(f.key) }}</span>
                 </button>
@@ -464,7 +515,7 @@
                 <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                   <PhClock class="w-7 h-7 text-gray-300" />
                 </div>
-                <p class="text-sm font-bold text-gray-500">ยังไม่มีบันทึกกิจกรรม</p>
+                <p class="text-sm font-bold text-gray-500">ยังไม่มีประวัติการดำเนินการ</p>
               </div>
 
               <!-- Empty — กรองแล้วไม่มีผล -->
@@ -477,155 +528,165 @@
                 </button>
               </div>
 
-              <!-- Table -->
-              <div v-else class="-mx-6 -mb-6">
-                <table class="w-full">
-                  <thead class="bg-gray-50 border-y border-gray-100">
-                    <tr>
-                      <th class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider px-6 py-3 w-36">วันที่และเวลา</th>
-                      <th class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">กิจกรรม</th>
-                      <th class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">รายละเอียด</th>
-                      <th class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3 w-44">ผู้ดำเนินการ</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-50">
-                    <tr v-for="log in filteredAuditLogs" :key="log.id"
-                      :class="['transition-colors duration-100', getRowHighlight(log.action)]">
+              <!-- Activity feed (timeline) -->
+              <div v-else class="pt-1">
+                <div v-for="(log, idx) in filteredAuditLogs" :key="log.id" class="flex gap-3.5">
 
-                      <!-- วันที่และเวลา -->
-                      <td class="px-6 py-3.5 whitespace-nowrap align-top">
-                        <p class="text-xs font-semibold text-gray-700 tabular-nums">{{ formatDate(dayjs(log.createdAt).format('YYYY-MM-DD')) }}</p>
-                        <p class="text-[10px] text-gray-400 tabular-nums mt-0.5">{{ dayjs(log.createdAt).format('HH:mm') }} น.</p>
-                      </td>
+                  <!-- Rail: action icon + connecting line -->
+                  <div class="flex flex-col items-center shrink-0">
+                    <div :class="['w-9 h-9 rounded-xl flex items-center justify-center shrink-0', getActionTheme(log.action).bg]">
+                      <component :is="getActionIcon(log.action)" :class="['w-4 h-4', getActionTheme(log.action).icon]" />
+                    </div>
+                    <div v-if="idx < filteredAuditLogs.length - 1" class="w-0.5 flex-1 bg-gray-200 rounded-full mt-1.5 min-h-[1.25rem]"></div>
+                  </div>
 
-                      <!-- กิจกรรม -->
-                      <td class="px-4 py-3.5 align-top">
-                        <div class="flex items-start gap-2.5">
-                          <div :class="['w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5', getActionTheme(log.action).bg]">
-                            <component :is="getActionIcon(log.action)" :class="['w-3.5 h-3.5', getActionTheme(log.action).icon]" />
-                          </div>
-                          <p :class="['text-xs font-semibold leading-snug pt-1', getActionLabelClass(log.action)]">{{ getActionLabel(log) }}</p>
-                        </div>
-                      </td>
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0 pb-5">
+                    <div class="flex items-start justify-between gap-3 flex-wrap">
+                      <p :class="['text-sm font-semibold leading-normal', getActionLabelClass(log.action)]">{{ getActionLabel(log) }}</p>
+                      <p class="text-xs text-gray-500 font-medium tabular-nums shrink-0 whitespace-nowrap mt-0.5">
+                        {{ formatDate(dayjs(log.createdAt).format('YYYY-MM-DD')) }}
+                        <span class="text-gray-400 ml-1">{{ dayjs(log.createdAt).format('HH:mm') }} น.</span>
+                      </p>
+                    </div>
 
-                      <!-- รายละเอียด -->
-                      <td class="px-4 py-3.5 align-top">
-                        <div v-if="log.details?.file_name"
-                          class="inline-flex items-center gap-1.5 text-[11px] text-gray-500 bg-gray-50 px-2 py-1 rounded-lg ring-1 ring-inset ring-gray-100">
-                          <PhFile class="w-3 h-3 shrink-0 text-gray-400" />
-                          <span class="break-all">{{ log.details.file_name }}</span>
-                        </div>
-                        <div v-else-if="log.details?.notes"
-                          class="flex items-start gap-1.5 text-[11px] text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded-lg ring-1 ring-inset ring-orange-100">
-                          <PhWarning class="w-3 h-3 shrink-0 mt-px text-orange-500" />
-                          <span class="whitespace-pre-wrap leading-relaxed">{{ log.details.notes }}</span>
-                        </div>
-                        <div v-else-if="log.details?.before" class="space-y-1.5">
-                          <div v-for="(val, key) in log.details.before" :key="key"
-                            class="flex items-center gap-1.5 text-[11px] flex-wrap">
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide shrink-0">{{ FIELD_LABELS[key] || key }}</span>
-                            <span class="line-through text-gray-300">{{ val || 'ว่าง' }}</span>
-                            <PhArrowRight class="w-2.5 h-2.5 text-gray-300 shrink-0" />
-                            <span class="font-semibold text-primary-700">{{ log.details.after?.[key] || 'ว่าง' }}</span>
-                          </div>
-                        </div>
-                        <span v-else class="text-xs text-gray-300">ไม่มีข้อมูล</span>
-                      </td>
+                    <!-- Detail -->
+                    <div v-if="log.details?.file_name"
+                      class="mt-2 inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-lg ring-1 ring-inset ring-gray-100">
+                      <PhFile class="w-3 h-3 shrink-0 text-gray-400" />
+                      <span class="break-all">{{ log.details.file_name }}</span>
+                    </div>
+                    <div v-else-if="log.details?.notes"
+                      class="mt-2 flex items-start gap-1.5 text-xs text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded-lg ring-1 ring-inset ring-orange-100">
+                      <PhWarning class="w-3 h-3 shrink-0 mt-px text-orange-500" />
+                      <span class="whitespace-pre-wrap leading-relaxed">{{ log.details.notes }}</span>
+                    </div>
+                    <div v-else-if="log.details?.before" class="mt-2 space-y-1.5">
+                      <div v-for="(val, key) in log.details.before" :key="key"
+                        class="flex items-center gap-1.5 text-xs flex-wrap">
+                        <span class="text-xs font-bold text-gray-600 shrink-0">{{ FIELD_LABELS[key] || key }}</span>
+                        <span class="line-through text-gray-400">{{ formatChangeValue(key, val) }}</span>
+                        <PhArrowRight class="w-2.5 h-2.5 text-gray-400 shrink-0" />
+                        <span class="font-semibold text-primary-700">{{ formatChangeValue(key, log.details.after?.[key]) }}</span>
+                      </div>
+                    </div>
 
-                      <!-- ผู้ดำเนินการ -->
-                      <td class="px-4 py-3.5 align-top">
-                        <p class="text-xs font-semibold text-gray-700 leading-snug">{{ log.user?.name || 'ระบบ' }}</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5 leading-snug">{{ USER_ROLE_LABELS[log.user?.role] || '' }}</p>
-                      </td>
-
-                    </tr>
-                  </tbody>
-                </table>
+                    <!-- Actor -->
+                    <p class="text-xs text-gray-500 mt-2">
+                      โดย <span class="font-semibold text-gray-900">{{ formatUserName(log.user) || 'ระบบ' }}</span><span v-if="USER_ROLE_LABELS[log.user?.role]" class="text-gray-500"> ({{ USER_ROLE_LABELS[log.user?.role] }})</span>
+                    </p>
+                  </div>
+                </div>
               </div>
 
             </div>
           </div>
         </template>
         </div>
-        </Transition>
       </div>
 
       <!-- Right Side Area (Sidebar) — แสดงเฉพาะ tab ข้อมูลทั่วไป -->
-      <div v-if="activeTab === 'info'" class="space-y-4">
+      <div v-if="activeTab === 'info'" class="space-y-5 self-start">
         <!-- Unified Status Card: Progress + Deadline -->
-        <div class="bg-white rounded-xl border border-gray-200 ">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
-          <!-- ST01 Progress section — count-up % + fill animation -->
+          <!-- Card header -->
+          <div class="px-5 py-3.5 flex items-center justify-between border-b border-gray-100 bg-gray-50/40">
+            <div class="flex items-center gap-2">
+              <PhChartLineUp class="w-4 h-4 text-gray-500 shrink-0" />
+              <h2 class="text-sm sm:text-base font-bold text-gray-900">ภาพรวมสถานะ</h2>
+            </div>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200">
+              {{ miniApprovedCount }} / {{ miniSteps.length }} ขั้น
+            </span>
+          </div>
+
+          <!-- Progress section -->
           <div class="p-5">
-            <div class="flex items-center justify-between mb-3">
-              <p class="text-xs font-semibold text-gray-500">ความคืบหน้า</p>
-              <span class="text-2xl font-black text-gray-900 tabular-nums">{{ countProgress }}%</span>
-            </div>
-            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                class="h-full rounded-full animate-progress-fill"
-                :class="progressPercentage === 100 ? 'bg-emerald-500' : 'bg-primary-500'"
-                :style="{ width: `${progressPercentage}%`, animationDuration: '800ms' }"
-              />
-            </div>
-            <div class="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
-              <PhCopySimple class="w-3.5 h-3.5 shrink-0 text-gray-300" />
-              เวอร์ชันที่ {{ c.committee_steps?.length ? c.committee_steps.filter(s => s.status === 'approved').length + 1 : 1 }}
+            <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-4 mb-2">
+              <div class="flex items-center justify-between mb-2.5">
+                <div>
+                  <p class="text-xs font-semibold text-gray-700">ความคืบหน้าหลักสูตร</p>
+                  <p v-if="miniSteps.length" class="text-[11px] text-gray-500 mt-0.5">
+                    ผ่านแล้ว {{ miniApprovedCount }} จาก {{ miniSteps.length }} ขั้น
+                  </p>
+                </div>
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-lg font-bold tabular-nums text-gray-900">{{ progressPercentage }}</span>
+                  <span class="text-xs font-semibold text-gray-500">%</span>
+                </div>
+              </div>
+              <div class="h-2 bg-gray-200/80 rounded-full overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-[width] duration-500 ease-out"
+                  :class="progressPercentage === 100 ? 'bg-emerald-500' : 'bg-primary-600'"
+                  :style="{ width: `${progressPercentage}%` }"
+                />
+              </div>
             </div>
           </div>
 
           <!-- Deadline section -->
-          <div v-if="effectiveDeadline" class="border-t border-gray-100 p-5">
-            <p class="text-xs font-semibold text-gray-500 mb-3">
+          <div v-if="effectiveDeadline" class="border-t border-gray-100 px-5 pt-4 pb-5">
+            <p class="text-xs font-semibold text-gray-700 mb-2">
               {{ c.status === 'revision' && c.revision_deadline ? 'กำหนดส่งแก้ไข' : 'กำหนดส่งหลักสูตร' }}
             </p>
-            <div class="flex items-center justify-between gap-2">
+            <div class="rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 flex items-center justify-between gap-2">
               <p class="text-sm font-bold text-gray-900">{{ formatDate(effectiveDeadline) }}</p>
-              <span :class="['text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded shrink-0',
+              <span :class="['text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0',
                 isDateOverdue(effectiveDeadline)
-                  ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
-                  : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
+                  ? 'bg-red-50 text-red-600 border border-red-200'
+                  : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
               ]">
-                {{ daysRemaining < 0 ? `เกิน ${Math.abs(daysRemaining)} วัน` : `${daysRemaining} วัน` }}
+                {{ daysRemaining < 0 ? `เกิน ${Math.abs(daysRemaining)} วัน` : `เหลือ ${daysRemaining} วัน` }}
               </span>
             </div>
-            <div class="mt-2.5 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                :class="['h-full rounded-full animate-progress-fill', daysRemaining < 0 ? 'bg-red-400' : 'bg-emerald-400']"
-                :style="{ width: daysRemaining < 0 ? '100%' : `${Math.max(5, Math.min(100, (daysRemaining / 30) * 100))}%`, animationDuration: '600ms' }"
-              />
-            </div>
           </div>
-        </div>
 
-        <!-- Mini Committee Pipeline -->
-        <div v-if="c.committee_steps?.length" class="bg-white rounded-xl border border-gray-200 ">
-          <div class="p-4">
-            <p class="text-xs font-semibold text-gray-500 mb-3">ขั้นตอนคณะกรรมการ</p>
-            <div class="flex items-center">
-              <template v-for="(step, idx) in c.committee_steps" :key="step.id">
-                <div
-                  :class="['w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 transition-all',
-                    step.status === 'approved' ? 'bg-emerald-500 text-white' :
-                    step.status === 'revision'  ? 'bg-orange-400 text-white' :
-                    step.id === c.current_committee_step_id ? 'bg-primary-600 text-white ring-2 ring-primary-100' :
-                    'bg-gray-100 text-gray-400'
+          <!-- ขั้นตอนคณะกรรมการ -->
+          <div v-if="c.committee_steps?.length" class="border-t border-gray-100 px-5 pt-4 pb-5">
+            <p class="text-xs font-semibold text-gray-700 mb-4">สถานะการพิจารณาตามลำดับขั้น</p>
+
+            <!-- vertical timeline -->
+            <div>
+              <div v-for="(step, idx) in miniSteps" :key="step.id" class="flex gap-3">
+                <!-- node + connector column -->
+                <div class="flex flex-col items-center">
+                  <div :class="['w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 transition-all duration-200',
+                    step.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-300 shadow-2xs' :
+                    step.status === 'revision'  ? 'bg-orange-50 text-orange-600 border border-orange-300 shadow-2xs' :
+                    step.id === miniCurrentId ? 'bg-primary-50 text-primary-600 border border-primary-300 ring-2 ring-primary-500/15 shadow-2xs font-extrabold scale-105' :
+                    'bg-gray-50 text-gray-400 border border-gray-200'
                   ]">
-                  <PhCheck v-if="step.status === 'approved'" class="w-3 h-3" />
-                  <span v-else>{{ step.step_order }}</span>
+                    <PhCheck v-if="step.status === 'approved'" class="w-3.5 h-3.5 stroke-[2.5]" />
+                    <PhArrowCounterClockwise v-else-if="step.status === 'revision'" class="w-3.5 h-3.5" />
+                    <span v-else>{{ idx + 1 }}</span>
+                  </div>
+                  <div v-if="idx < miniSteps.length - 1"
+                    class="w-0.5 flex-1 my-1.5 rounded-full"
+                    :class="step.status === 'approved' ? 'bg-emerald-200' : 'bg-gray-150'" />
                 </div>
-                <div v-if="idx < c.committee_steps.length - 1"
-                  class="h-0.5 flex-1 min-w-[3px] transition-all"
-                  :class="step.status === 'approved' ? 'bg-emerald-200' : 'bg-gray-100'" />
-              </template>
+                <!-- label -->
+                <div :class="['flex-1 min-w-0', idx < miniSteps.length - 1 ? 'pb-3.5' : '']">
+                  <p v-if="step.id === miniCurrentStep?.id"
+                    :class="['text-[11px] font-bold mb-0.5', step.status === 'revision' ? 'text-orange-600' : 'text-primary-600']">
+                    {{ step.status === 'revision' ? 'ส่งกลับให้แก้ไข' : 'กำลังพิจารณา' }}
+                  </p>
+                  <p :class="['text-xs sm:text-[13px] leading-snug',
+                    step.id === miniCurrentStep?.id ? 'font-bold text-gray-900' :
+                    step.status === 'approved' ? 'font-medium text-gray-600' :
+                    'font-normal text-gray-400'
+                  ]">
+                    {{ stepLabelFull(step) }}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p class="text-xs text-gray-400 mt-3">
-              ผ่านแล้ว <span class="font-bold text-gray-700">{{ c.committee_steps.filter(s => s.status === 'approved').length }}</span> จาก {{ c.committee_steps.length }} ขั้นตอน
-            </p>
           </div>
         </div>
       </div>
     </div>
+    <!-- /main grid -->
 
     <!-- Reject Modal (first review) -->
     <Teleport to="body">
@@ -657,9 +718,9 @@
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">กำหนดส่งแก้ไขรอบนี้ <span class="font-normal text-gray-400">(ไม่บังคับ)</span></label>
                 <FormDatePicker v-model="rejectDeadline" placeholder="เลือกวันที่กำหนดส่ง" />
               </div>
-              <div class="px-6 pb-6 flex gap-2">
-                <button type="button" class="flex-1 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-200 active:scale-[0.97] transition-all ease-ios" @click="showRejectModal = false">ยกเลิก</button>
-                <button type="button" class="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-500 active:scale-[0.97] transition-all ease-ios" @click="handleReject">ยืนยันการส่งกลับ</button>
+              <div class="px-6 pb-6 flex flex-col-reverse sm:flex-row gap-3">
+                <button type="button" class="w-full sm:flex-1 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-200 active:scale-[0.97] transition-all ease-ios whitespace-nowrap" @click="showRejectModal = false">ยกเลิก</button>
+                <button type="button" class="w-full sm:flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-500 active:scale-[0.97] transition-all ease-ios whitespace-nowrap" @click="handleReject">ยืนยันการส่งกลับ</button>
               </div>
             </div>
           </div>
@@ -697,9 +758,9 @@
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">กำหนดส่งแก้ไขรอบนี้ <span class="font-normal text-gray-400">(ไม่บังคับ)</span></label>
                 <FormDatePicker v-model="recheckRejectDeadline" placeholder="เลือกวันที่กำหนดส่ง" />
               </div>
-              <div class="px-6 pb-6 flex gap-2">
-                <button type="button" class="flex-1 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-200 active:scale-[0.97] transition-all ease-ios" @click="showRecheckRejectModal = false">ยกเลิก</button>
-                <button type="button" class="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-500 active:scale-[0.97] transition-all ease-ios" @click="handleRejectRecheck">ยืนยันการส่งกลับ</button>
+              <div class="px-6 pb-6 flex flex-col-reverse sm:flex-row gap-3">
+                <button type="button" class="w-full sm:flex-1 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-200 active:scale-[0.97] transition-all ease-ios whitespace-nowrap" @click="showRecheckRejectModal = false">ยกเลิก</button>
+                <button type="button" class="w-full sm:flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-500 active:scale-[0.97] transition-all ease-ios whitespace-nowrap" @click="handleRejectRecheck">ยืนยันการส่งกลับ</button>
               </div>
             </div>
           </div>
@@ -719,7 +780,9 @@ import { useTeamEditor } from '@/composables/useTeamEditor';
 import { useInfoEditor } from '@/composables/useInfoEditor';
 import { useCountUp } from '@/composables/useCountUp';
 import StatusBadge from '@/components/common/StatusBadge.vue';
+import RevisionCycleBadge from '@/components/curriculum/RevisionCycleBadge.vue';
 import FormSelect from '@/components/common/FormSelect.vue';
+import FormCombobox from '@/components/common/FormCombobox.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 import DocumentsPanel from '@/components/curriculum/DocumentsPanel.vue';
 import CommitteePanel from '@/components/curriculum/CommitteePanel.vue';
@@ -732,16 +795,16 @@ import {
   PhCheckCircle, PhClock, PhArrowsClockwise, PhCaretRight,
   PhNotePencil, PhUsersThree, PhFilePlus, PhTrash, PhXCircle,
   PhFile, PhArrowCounterClockwise, PhBank,
-  PhUploadSimple, PhCopySimple, PhFileText,
+  PhUploadSimple, PhFileText,
   PhFolderOpen, PhGraduationCap, PhClipboardText, PhEnvelope,
-  PhArrowRight, PhBook
+  PhArrowRight, PhBook, PhListChecks, PhChartLineUp
 } from '@phosphor-icons/vue';
 import { PhCaretDown, PhCheck } from '@phosphor-icons/vue';
-import { getDept } from '@/constants/deptConfig';
+import { getDept } from '@/constants/departments';
 import { COMMITTEE_LABELS } from '@/constants/committees';
-import api from '@/services/api';
 import dayjs from 'dayjs';
 import { formatThaiDate, formatThaiDateTime, isOverdue as isDateOverdue } from '@/utils/date';
+import { formatUserName } from '@/utils/user';
 import { useToast } from '@/composables/useToast';
 import { useConfirm } from '@/composables/useConfirm';
 
@@ -793,15 +856,53 @@ const currentSteps = computed(() => {
   return COMMITTEE_FLOW[c.value.degree_level] || [];
 });
 
+// % ความคืบหน้า (8 ขั้น): ขั้น 1 = งานหลักสูตร คณะวิทยาศาสตร์ ตรวจผ่าน = 20
+// จากนั้นผ่านคณะกรรมการแต่ละชุด +10 ต่อชุด, ผ่าน CISA (อนุมัติ) = 100
+// สเกล: 0 → 20 → 30 → 40 → 50 → 60 → 70 → 80 → 100
 const progressPercentage = computed(() => {
   if (!c.value) return 0;
-  if (c.value.status === 'approved') return 100;
-  if (['pending_department', 'department_submitted', 'pending_admin_recheck'].includes(c.value.status)) return 5;
-  
-  const steps = c.value.committee_steps || [];
-  const approvedCount = steps.filter(s => s.status === 'approved').length;
-  return Math.round((approvedCount / (steps.length || MAX_COMMITTEE_STEPS)) * 100);
+  const status = c.value.status;
+  if (status === 'approved') return 100;
+  const approved = (c.value.committee_steps || []).filter(s => s.status === 'approved').length;
+  // ผ่าน "งานหลักสูตร" แล้ว = ถูกนำเข้าสู่คณะกรรมการ (admin อนุมัติเข้าแล้ว)
+  const passedOffice = approved > 0
+    || ['under_committee', 'pending_admin_recheck'].includes(status)
+    || (status === 'revision' && c.value.current_committee_step_id != null);
+  if (!passedOffice) return 0;
+  return Math.min(100, 20 + approved * 10);
 });
+
+// ── ขั้นที่ 1 (virtual) งานหลักสูตร คณะวิทยาศาสตร์ — สำหรับ mini pipeline ให้ครบ 8 ขั้น ──
+const OFFICE_STEP_ID = 'science-office';
+const miniSteps = computed(() => {
+  const steps = c.value?.committee_steps;
+  if (!steps?.length) return [];
+  const s = c.value.status;
+  const passed = steps.some(st => st.status === 'approved')
+    || ['under_committee', 'pending_admin_recheck', 'approved'].includes(s)
+    || (s === 'revision' && c.value.current_committee_step_id != null);
+  let officeStatus = 'pending';
+  if (passed) officeStatus = 'approved';
+  else if (s === 'revision' && c.value.current_committee_step_id == null) officeStatus = 'revision';
+  return [{ id: OFFICE_STEP_ID, step_order: 0, status: officeStatus }, ...steps];
+});
+const miniCurrentId = computed(() =>
+  c.value?.status === 'department_submitted' ? OFFICE_STEP_ID : c.value?.current_committee_step_id
+);
+const miniApprovedCount = computed(() => miniSteps.value.filter(s => s.status === 'approved').length);
+// ขั้นที่กำลังดำเนินการ — revision มาก่อน (โดนตีกลับ) แล้วค่อยขั้น current ปกติ
+const miniCurrentStep = computed(() => {
+  const steps = miniSteps.value;
+  if (!steps.length || c.value?.status === 'approved') return null;
+  return steps.find(s => s.status === 'revision')
+    || steps.find(s => s.id === miniCurrentId.value)
+    || null;
+});
+const stepLabelFull = (step) => {
+  if (!step) return '';
+  if (step.id === OFFICE_STEP_ID) return 'งานหลักสูตร คณะวิทยาศาสตร์';
+  return COMMITTEE_LABELS[step.committee_type] || 'คณะกรรมการพิจารณา';
+};
 
 // ST01 count-up สำหรับ % progress
 const countProgress = useCountUp(progressPercentage, { duration: 800, delay: 200 });
@@ -868,27 +969,43 @@ const recheckRejectDeadline = ref('');
 // ── Composables ────────────────────────────────────────────────────────────────
 const { auditLogs, historyLoading, activityFilter, filteredAuditLogs, filterCount, loadHistory } = useAuditLog();
 
+const hasDocuments = computed(() => (c.value?.documents?.length ?? 0) > 0);
+
+const onDocumentUploaded = async () => {
+  loadHistory();
+  await curriculumStore.fetchById(route.params.id);
+};
+
 const {
   editingInfo, savingInfo, editForm,
   startEdit: startEditInfo, cancelEdit: cancelEditInfo, save: saveInfo,
 } = useInfoEditor(route.params.id);
 
 const {
-  editingTeam, savingTeam, teamForm, focusedTeamMember, allUsers,
+  editingTeam, savingTeam, teamForm, focusedTeamMember, allUsers, showAllDepts: showAllTeamDepts,
   nextRole: nextTeamRole, startEdit: startEditTeam, cancelEdit: cancelEditTeam,
   save: saveTeamFn, getSuggestions: getTeamSuggestions, selectMember: selectTeamMember, loadUsers,
-} = useTeamEditor(route.params.id, () => curriculumStore.fetchById(route.params.id));
+} = useTeamEditor(route.params.id, () => curriculumStore.fetchById(route.params.id), () => c.value?.department_id);
 
 const ROLE_LABELS = {
   president: 'ประธานหลักสูตร',
   secretary: 'เลขาธิการหลักสูตร',
-  responsible: 'อาจารย์ผู้รับผิดชอบ'
+  responsible: 'อาจารย์ผู้รับผิดชอบหลักสูตร'
 };
 const ROLE_BADGE = {
   president: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
   secretary: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   responsible: 'bg-gray-50 text-gray-600 ring-gray-500/10'
 };
+
+const currentYear = new Date().getFullYear() + 543;
+const yearOptions = [
+  currentYear + 2,
+  currentYear + 1,
+  currentYear,
+  currentYear - 1,
+  currentYear - 2
+].map(y => ({ label: String(y), value: String(y) }));
 
 const getActionLabel = (log) => {
   const ct = log.details?.committee_type;
@@ -898,9 +1015,9 @@ const getActionLabel = (log) => {
     case 'UPDATE_CURRICULUM':        return 'แก้ไขข้อมูลหลักสูตร';
     case 'UPDATE_TEAM':              return 'แก้ไขผู้รับผิดชอบหลักสูตร';
     case 'UPLOAD_DOCUMENT':          return 'อัปโหลดเอกสาร';
-    case 'UPLOAD_TQF2':              return 'อัปโหลดเอกสาร มคอ.2';
+    case 'UPLOAD_TQF2':              return 'อัปโหลดเอกสาร ร่างหลักสูตร (มคอ.2)';
     case 'DELETE_DOCUMENT':          return 'ลบเอกสาร';
-    case 'DELETE_TQF2':              return 'ลบเอกสาร มคอ.2';
+    case 'DELETE_TQF2':              return 'ลบเอกสาร ร่างหลักสูตร (มคอ.2)';
     case 'DEPARTMENT_SUBMIT':        return 'ส่งหลักสูตรเพื่อตรวจสอบ';
     case 'ADMIN_APPROVE':            return 'ผ่านการตรวจสอบ เข้าสู่กระบวนการคณะกรรมการ';
     case 'ADMIN_REJECT':             return 'งานหลักสูตรคณะส่งกลับแก้ไข';
@@ -937,7 +1054,7 @@ const getActionIcon = (action) => {
 const USER_ROLE_LABELS = {
   admin:     'เจ้าหน้าที่หลักสูตรคณะ',
   faculty:   'อาจารย์ผู้รับผิดชอบหลักสูตร',
-  staff:     'เจ้าหน้าที่ภาควิชา',
+  staff:     'เจ้าหน้าที่สาขาวิชา',
   registrar: 'เจ้าหน้าที่กองบริการการศึกษา',
   executive: 'ผู้บริหารคณะ',
 };
@@ -948,6 +1065,13 @@ const FIELD_LABELS = {
   field_of_study: 'สาขาวิชา',
   curriculum_year: 'ปีหลักสูตร',
   deadline: 'กำหนดส่ง'
+};
+
+// format ค่า before/after ใน audit log — field วันที่ให้เป็นรูปแบบไทย
+const DATE_FIELDS = ['deadline', 'revision_deadline'];
+const formatChangeValue = (key, val) => {
+  if (val === null || val === undefined || val === '') return 'ว่าง';
+  return DATE_FIELDS.includes(key) ? formatThaiDate(val) : val;
 };
 
 const FILTER_STYLES = {
@@ -999,18 +1123,10 @@ const getActionLabelClass = (action) => {
 const tabs = computed(() => [
   { key: 'info',      label: 'รายละเอียดหลักสูตร',   desc: 'รายละเอียดและทีมหลักสูตร',       icon: PhInfo },
   { key: 'tqf2',     label: 'ร่างหลักสูตร (มคอ.2)', desc: 'เอกสารหลักและการเปรียบเทียบ',   icon: PhFileText },
-  { key: 'documents',label: 'เอกสารประกอบ',          desc: 'เอกสารและหลักฐานที่เกี่ยวข้อง', icon: PhFolderOpen },
-  { key: 'committee',label: 'การพิจารณา',             desc: 'มติและขั้นตอนการอนุมัติ',        icon: PhGraduationCap },
-  { key: 'history',  label: 'ความเคลื่อนไหว',        desc: 'ติดตามทุกการเปลี่ยนแปลง',        icon: PhClipboardText }
+  { key: 'documents',label: 'เอกสารประกอบหลักสูตร',          desc: 'เอกสารและหลักฐานประกอบหลักสูตร', icon: PhFolderOpen },
+  { key: 'committee',label: 'สถานะการพิจารณา',             desc: 'มติและขั้นตอนการพิจารณาของคณะกรรมการ',        icon: PhGraduationCap },
+  { key: 'history',  label: 'ประวัติการดำเนินการหลักสูตร',        desc: 'ประวัติการดำเนินการทั้งหมดของหลักสูตร',        icon: PhClipboardText }
 ]);
-
-const BANNER_COLOR_MAP = {
-  orange: { ring: 'ring-orange-200', bg: 'bg-orange-50/60', bgBar: 'bg-orange-50/80 border-orange-100', iconBg: 'bg-orange-100', icon: 'text-orange-500', title: 'text-orange-900', body: 'text-orange-700' },
-  red:   { ring: 'ring-red-200',   bg: 'bg-red-50',      bgBar: 'bg-red-50/80 border-red-100',       iconBg: 'bg-red-100',    icon: 'text-red-600',   title: 'text-red-900',   body: 'text-red-700'    },
-  blue:  { ring: 'ring-blue-200',  bg: 'bg-blue-50',     bgBar: 'bg-blue-50/80 border-blue-100',     iconBg: 'bg-blue-100',   icon: 'text-blue-600',  title: 'text-blue-900',  body: 'text-blue-600'   },
-  gray:  { ring: 'ring-gray-200',  bg: 'bg-gray-50',     bgBar: 'bg-gray-50/80 border-gray-100',     iconBg: 'bg-gray-100',   icon: 'text-gray-500',  title: 'text-gray-800',  body: 'text-gray-500'   },
-};
-const bannerStyle = computed(() => BANNER_COLOR_MAP[actionBanner.value?.color] ?? BANNER_COLOR_MAP.gray);
 
 const canEdit = computed(() => {
   if (!c.value) return false;
@@ -1030,47 +1146,32 @@ const COMMITTEE_TYPE_LABELS = {
   cisa: 'CISA'
 };
 
-const actionBanner = computed(() => {
+// แสดงแถวปุ่ม action เฉพาะสถานะที่ผู้ใช้ทำอะไรได้ (แทนแบนเนอร์เดิม)
+const hasActions = computed(() => {
+  if (!c.value) return false;
+  const status = c.value.status;
+  if (authStore.isFaculty) return status === 'pending_department' || status === 'revision';
+  if (authStore.isAdmin)   return status === 'department_submitted' || status === 'pending_admin_recheck';
+  return false;
+});
+
+// ข้อความบริบทฝั่งซ้ายของแถบ action (decision zone)
+const actionContext = computed(() => {
   if (!c.value) return null;
   const status = c.value.status;
-  const isAdmin = authStore.isAdmin;
-  const isFaculty = authStore.isFaculty;
-
-  if (status === 'pending_department') {
-    if (isFaculty) return {
-      icon: PhClock, color: 'orange',
-      title: 'รอการดำเนินการจากภาควิชา',
-      body: 'กรุณาอัปโหลดเอกสารร่างหลักสูตร (มคอ.2) และเอกสารอ้างอิงให้ครบถ้วน แล้วส่งหลักสูตรเพื่อตรวจสอบ',
-    };
-    if (isAdmin) return {
-      icon: PhClock, color: 'orange',
-      title: 'รอข้อมูลจากภาควิชา',
-      body: 'หลักสูตรนี้อยู่ระหว่างการจัดเตรียมเอกสารโดยภาควิชา',
-    };
+  if (authStore.isFaculty) {
+    if (status === 'pending_department')
+      return { title: 'ตรวจสอบและนำส่งหลักสูตร', hint: 'โปรดตรวจสอบและอัปโหลดเอกสารให้ครบถ้วน ก่อนกดส่งให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบ' };
+    if (status === 'revision' && !c.value.current_committee_step_id)
+      return { title: 'ปรับแก้เอกสารตามข้อเสนอแนะ', hint: 'โปรดตรวจสอบและอัปโหลดเอกสารให้ครบถ้วน ก่อนกดส่งให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบ' };
+    if (status === 'revision' && c.value.current_committee_step_id)
+      return { title: 'ปรับแก้ตามมติคณะกรรมการ', hint: 'โปรดปรับแก้เอกสารตามมติคณะกรรมการให้ครบถ้วน ก่อนส่งกลับให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบอีกครั้ง' };
   }
-  if (status === 'revision') {
-    if (isFaculty) return {
-      icon: PhWarning, color: 'red',
-      title: 'หลักสูตรถูกส่งกลับให้แก้ไข',
-      body: 'กรุณาตรวจสอบข้อเสนอแนะ ปรับปรุงเอกสารให้ครบถ้วน แล้วส่งกลับเพื่อดำเนินการต่อ',
-    };
-  }
-  if (status === 'department_submitted' && isAdmin) return {
-    icon: PhCheckCircle, color: 'blue',
-    title: 'ภาควิชาส่งหลักสูตรแล้ว',
-    body: 'กรุณาตรวจสอบความถูกต้องและครบถ้วนของเอกสารก่อนนำเข้าสู่กระบวนการพิจารณาของคณะกรรมการ',
-  };
-  if (status === 'pending_admin_recheck') {
-    if (isAdmin) return {
-      icon: PhClock, color: 'orange',
-      title: 'รอตรวจสอบก่อนนำเข้าคณะกรรมการ',
-      body: 'สาขาส่งเอกสารที่แก้ไขตามมติคณะกรรมการคืนมาแล้ว กรุณาตรวจสอบความถูกต้องก่อนส่งคืนคณะกรรมการ',
-    };
-    if (isFaculty) return {
-      icon: PhClock, color: 'orange',
-      title: 'อยู่ระหว่างการตรวจสอบโดยงานหลักสูตร คณะวิทยาศาสตร์',
-      body: 'เอกสารถูกส่งให้งานหลักสูตร คณะวิทยาศาสตร์ตรวจสอบแล้ว กรุณารอผลการตรวจสอบก่อนนำเข้าสู่ที่ประชุมคณะกรรมการ',
-    };
+  if (authStore.isAdmin) {
+    if (status === 'department_submitted')
+      return { title: 'ตรวจสอบความถูกต้องของเอกสาร', hint: 'โปรดตรวจสอบเอกสารที่ภาควิชาจัดส่ง แล้วเลือกดำเนินการในขั้นตอนถัดไป' };
+    if (status === 'pending_admin_recheck')
+      return { title: 'ตรวจสอบเอกสารที่ปรับแก้', hint: 'โปรดตรวจสอบเอกสารที่ปรับแก้เพิ่มเติม แล้วเลือกดำเนินการในขั้นตอนถัดไป' };
   }
   return null;
 });
@@ -1094,6 +1195,7 @@ const submitting = ref(false);
 const handleSubmit = async () => {
   const ok = await confirm({
     title: 'ส่งหลักสูตรเพื่อตรวจสอบ',
+    message: 'ระบบจะนำส่งหลักสูตรให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบต่อไป',
     confirmLabel: 'ส่งหลักสูตร',
     type: 'primary',
   });
@@ -1112,8 +1214,7 @@ const handleApprove = async () => {
   if (submitting.value) return;
   const name = c.value?.field_of_study ? `สาขาวิชา${c.value.field_of_study}` : c.value?.degree_name || 'หลักสูตรนี้';
   const ok = await confirm({
-    title: 'นำเข้าสู่กระบวนการคณะกรรมการ',
-    subject: name,
+    title: `นำ${name}เข้าสู่กระบวนการคณะกรรมการ`,
     confirmLabel: 'ยืนยัน',
     type: 'primary',
   });
@@ -1145,7 +1246,12 @@ const handleReject = async () => {
 
 const handleResubmit = async () => {
   if (submitting.value) return;
-  const ok = await confirm({ title: 'ส่งให้งานหลักสูตรตรวจสอบ', confirmLabel: 'ส่งให้ตรวจสอบ', type: 'primary' });
+  const ok = await confirm({
+    title: 'ส่งให้งานหลักสูตรตรวจสอบ',
+    message: 'ระบบจะส่งหลักสูตรกลับให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบอีกครั้ง',
+    confirmLabel: 'ส่งให้ตรวจสอบ',
+    type: 'primary',
+  });
   if (!ok) return;
   submitting.value = true;
   try {
@@ -1161,8 +1267,8 @@ const handleApproveRecheck = async () => {
   if (submitting.value) return;
   const name = c.value?.field_of_study ? `สาขาวิชา${c.value.field_of_study}` : c.value?.degree_name || 'หลักสูตรนี้';
   const ok = await confirm({
-    title: 'นำเข้าที่ประชุมคณะกรรมการ', subject: name,
-    message: 'จะถูกส่งกลับเข้าสู่การพิจารณาของคณะกรรมการในขั้นตอนที่ตีกลับทันที',
+    title: `นำ${name}เข้าที่ประชุมคณะกรรมการ`,
+    message: `หลักสูตร${name} จะถูกส่งกลับเข้าสู่การพิจารณาของคณะกรรมการในขั้นตอนที่ตีกลับทันที`,
     confirmLabel: 'ยืนยัน', type: 'primary',
   });
   if (!ok) return;
@@ -1257,14 +1363,15 @@ onUnmounted(() => {
 
 /* ── Tab content cross-fade ──────────────────────────────────────────────── */
 .tab-content-enter-active {
-  transition: opacity 200ms ease-out, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 150ms ease-out;
 }
 .tab-content-leave-active {
-  transition: opacity 120ms ease-in;
+  transition: opacity 90ms ease-in;
   position: absolute;
   width: 100%;
   pointer-events: none;
 }
-.tab-content-enter-from { opacity: 0; transform: translateY(6px); }
+.tab-content-enter-from { opacity: 0; }
 .tab-content-leave-to   { opacity: 0; }
 </style>
+

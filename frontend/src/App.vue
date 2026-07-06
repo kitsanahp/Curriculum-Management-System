@@ -1,5 +1,5 @@
 <script setup>
-import DevRoleSwitcher from '@/components/DevRoleSwitcher.vue';
+import DevRoleSwitcher from '@/components/dev/DevRoleSwitcher.vue';
 </script>
 
 <template>

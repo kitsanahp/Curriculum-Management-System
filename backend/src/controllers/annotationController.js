@@ -1,6 +1,23 @@
-const { DocumentAnnotation, Document, TQF2Document, Curriculum, User } = require('../models');
+const { DocumentAnnotation, Document, TQF2Document, Curriculum, CurriculumTeam, Department, User } = require('../models');
 const { Op } = require('sequelize');
 const { ROLES } = require('../config/constants');
+const { listScope, canAccessCurriculumFile } = require('../utils/curriculumAccess');
+
+// โหลดเอกสาร (document/tqf2) พร้อมหลักสูตร แล้วตรวจสิทธิ์เข้าถึงด้วยด่านกลาง
+// กัน IDOR: ผู้ใช้เดา document_id แล้วอ่าน/เขียน/แก้ annotation ข้ามหลักสูตร
+// คืน { doc } ถ้าผ่าน หรือ { error: {status, message} } ถ้าไม่พบ/ไม่มีสิทธิ์
+async function loadAccessibleDoc(user, document_id, document_type) {
+  const docModel = document_type === 'tqf2' ? TQF2Document : Document;
+  const doc = await docModel.findOne({
+    where: { id: document_id, is_deleted: false },
+    include: [{ model: Curriculum, as: 'curriculum', attributes: ['id', 'department_id', 'degree_level'] }],
+  });
+  if (!doc) return { error: { status: 404, message: 'ไม่พบเอกสาร' } };
+  if (!(await canAccessCurriculumFile(user, doc.curriculum))) {
+    return { error: { status: 403, message: 'ไม่มีสิทธิ์เข้าถึงเอกสารนี้' } };
+  }
+  return { doc };
+}
 
 exports.getAnnotations = async (req, res, next) => {
   try {
@@ -9,14 +26,13 @@ exports.getAnnotations = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'ต้องระบุ document_id และ document_type' });
     }
 
-    // ตรวจสอบว่า document ยังมีอยู่และไม่ถูก soft-delete
-    const docModel = document_type === 'tqf2' ? TQF2Document : Document;
-    const doc = await docModel.findOne({ where: { id: document_id, is_deleted: false } });
-    if (!doc) return res.status(404).json({ success: false, message: 'ไม่พบเอกสาร' });
+    // ตรวจว่า document มีอยู่ ไม่ถูกลบ และผู้ใช้มีสิทธิ์เข้าถึงหลักสูตรนั้น
+    const { error } = await loadAccessibleDoc(req.user, document_id, document_type);
+    if (error) return res.status(error.status).json({ success: false, message: error.message });
 
     const annotations = await DocumentAnnotation.findAll({
       where: { document_id, document_type },
-      include: [{ association: 'author', attributes: ['id', 'name', 'role'] }],
+      include: [{ association: 'author', attributes: ['id', 'name', 'role', 'academic_position'] }],
       order: [['created_at', 'ASC']],
     });
     res.json({ success: true, data: annotations });
@@ -30,10 +46,9 @@ exports.createAnnotation = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' });
     }
 
-    // ตรวจสอบว่า document ยังมีอยู่และไม่ถูก soft-delete
-    const docModel = document_type === 'tqf2' ? TQF2Document : Document;
-    const doc = await docModel.findOne({ where: { id: document_id, is_deleted: false } });
-    if (!doc) return res.status(404).json({ success: false, message: 'ไม่พบเอกสาร' });
+    // ตรวจว่า document มีอยู่ ไม่ถูกลบ และผู้ใช้มีสิทธิ์เข้าถึงหลักสูตรนั้น
+    const { error } = await loadAccessibleDoc(req.user, document_id, document_type);
+    if (error) return res.status(error.status).json({ success: false, message: error.message });
 
     const annotation = await DocumentAnnotation.create({
       document_id, document_type,
@@ -42,7 +57,7 @@ exports.createAnnotation = async (req, res, next) => {
       author_id: req.user.id,
     });
     const withAuthor = await DocumentAnnotation.findByPk(annotation.id, {
-      include: [{ association: 'author', attributes: ['id', 'name', 'role'] }],
+      include: [{ association: 'author', attributes: ['id', 'name', 'role', 'academic_position'] }],
     });
     res.status(201).json({ success: true, data: withAuthor });
   } catch (error) { next(error); }
@@ -52,6 +67,11 @@ exports.resolveAnnotation = async (req, res, next) => {
   try {
     const ann = await DocumentAnnotation.findByPk(req.params.id);
     if (!ann) return res.status(404).json({ success: false, message: 'ไม่พบความเห็น' });
+
+    // กัน IDOR: ตรวจสิทธิ์เข้าถึงหลักสูตรของเอกสารที่ความเห็นนี้สังกัด ก่อนแก้สถานะ
+    const { error } = await loadAccessibleDoc(req.user, ann.document_id, ann.document_type);
+    if (error) return res.status(error.status).json({ success: false, message: error.message });
+
     ann.is_resolved = !ann.is_resolved;
     await ann.save();
     res.json({ success: true, data: ann });
@@ -82,17 +102,23 @@ exports.getSummary = async (req, res, next) => {
   try {
     let curriculumFilter = {};
     if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
-      const curricula = await Curriculum.findAll({
-        where: { department_id: req.user.department_id },
-        attributes: ['id'],
-      });
-      const ids = curricula.map(c => c.id);
+      // faculty → เฉพาะหลักสูตรที่ตนอยู่ในทีม | staff → ทั้งภาควิชา
+      const scope = listScope(req.user);
+      const queryOpts = { where: scope.condition, attributes: ['id'] };
+      if (scope.needsTeam) {
+        queryOpts.include = [{ model: CurriculumTeam, as: 'team', attributes: [], required: true }];
+      }
+      const curricula = await Curriculum.findAll(queryOpts);
+      const ids = [...new Set(curricula.map(c => c.id))];
       if (!ids.length) return res.json({ success: true, data: [] });
       curriculumFilter = { curriculum_id: { [Op.in]: ids } };
     }
 
-    const curriculumAttrs = ['id', 'degree_name', 'field_of_study', 'curriculum_year', 'degree_level'];
-    const curriculumInclude = { model: Curriculum, as: 'curriculum', attributes: curriculumAttrs };
+    const curriculumAttrs = ['id', 'degree_name', 'field_of_study', 'curriculum_year', 'degree_level', 'curriculum_type'];
+    const curriculumInclude = {
+      model: Curriculum, as: 'curriculum', attributes: curriculumAttrs,
+      include: [{ model: Department, as: 'department', attributes: ['id', 'name'] }],
+    };
 
     const [documents, tqf2Docs] = await Promise.all([
       Document.findAll({
@@ -111,7 +137,7 @@ exports.getSummary = async (req, res, next) => {
     const tqf2Ids = tqf2Docs.map(d => d.id);
 
     const annOpts = {
-      include: [{ association: 'author', attributes: ['id', 'name', 'role'] }],
+      include: [{ association: 'author', attributes: ['id', 'name', 'role', 'academic_position'] }],
       order: [['created_at', 'DESC']],
     };
     const [docAnns, tqf2Anns] = await Promise.all([

@@ -5,28 +5,25 @@
     @apply inline-flex items-center justify-center gap-2 px-4 py-2
            bg-primary-700 text-white text-[13px] font-bold
            hover:bg-primary-800 border border-primary-800
-           active:scale-[0.97] transition-all duration-150
+           transition-colors duration-150
            disabled:opacity-50 disabled:cursor-not-allowed;
     border-radius: var(--radius-sm);
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2
            bg-white text-gray-700 border border-gray-300 text-[13px] font-bold
            hover:bg-gray-50 hover:border-gray-400
-           active:scale-[0.97] transition-all duration-150;
+           transition-colors duration-150;
     border-radius: var(--radius-sm);
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2
            bg-status-danger text-white border border-status-danger-dark text-[13px] font-bold
            hover:bg-status-danger-dark
-           active:scale-[0.97] transition-all duration-150;
+           transition-colors duration-150;
     border-radius: var(--radius-sm);
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* ── Inputs (High Density) ────────────────────────────────────────────── */
@@ -60,41 +57,9 @@
   .badge-error   { @apply bg-red-50 text-red-700 border-red-200; }
   .badge-success { @apply bg-emerald-50 text-emerald-700 border-emerald-200; }
 
-  /* ── Custom Tooltip (data-tooltip attribute) ────────────────────────── */
-  [data-tooltip] { position: relative; }
-  [data-tooltip]::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%) translateY(2px);
-    background: oklch(98% 0.004 264);
-    color: oklch(38% 0.012 264);
-    border: 1px solid oklch(88% 0.008 264);
-    box-shadow: 0 2px 8px oklch(20% 0.01 264 / 0.08);
-    font-size: 10.5px;
-    font-weight: 500;
-    line-height: 1.3;
-    padding: 3px 9px;
-    border-radius: 6px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 120ms ease, transform 120ms ease;
-    z-index: 9999;
-  }
-  [data-tooltip]:hover::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  [data-tooltip-bottom]::after {
-    bottom: auto;
-    top: calc(100% + 6px);
-    transform: translateX(-50%) translateY(-2px);
-  }
-  [data-tooltip-bottom]:hover::after {
-    transform: translateX(-50%) translateY(0);
-  }
+  /* ── Custom Tooltip (data-tooltip) — ปิดไว้ชั่วคราว (ยังไม่ใช้ tooltip) ──
+     attribute data-tooltip ยังคงอยู่ในคอมโพเนนต์ แต่ไม่แสดงผล
+     ถ้าจะเปิดกลับ ให้คืน rule [data-tooltip]::after / :hover::after ที่นี่ */
 
   /* ── Document Typography ──────────────────────────────────────────────
      ใช้กับ container ที่แสดงเนื้อหาเอกสารราชการ (TQF2, เอกสารหลักสูตร)
@@ -131,64 +96,5 @@
     letter-spacing: -0.01em;
     line-height: 1.4;
   }
-}
-
-/* ── Dark mode: component classes (@apply inlines CSS, class-selectors don't match) ── */
-
-.dark .card {
-  background-color: var(--dm-surface) !important;
-  border-color:     var(--dm-border)  !important;
-}
-
-.dark .btn-secondary {
-  background-color: var(--dm-surface)       !important;
-  color:            var(--dm-text-2)        !important;
-  border-color:     var(--dm-border-strong) !important;
-}
-.dark .btn-secondary:hover {
-  background-color: var(--dm-surface-2)     !important;
-  border-color:     var(--dm-border-strong) !important;
-  color:            var(--dm-text-1)        !important;
-}
-
-.dark .input-base {
-  background-color: var(--dm-input-bg)      !important;
-  color:            var(--dm-text-1)        !important;
-  border-color:     var(--dm-border-strong) !important;
-}
-.dark .input-base::placeholder { color: var(--dm-text-4) !important; }
-.dark .input-base:focus {
-  background-color: var(--dm-input-bg)      !important;
-  border-color:     rgba(99,102,241,0.7)   !important;
-}
-
-.dark .badge-neutral {
-  background-color: var(--dm-surface-2)     !important;
-  color:            var(--dm-text-2)        !important;
-  border-color:     var(--dm-border-strong) !important;
-}
-
-.dark .badge-primary {
-  background-color: rgba(79,70,229,0.15)    !important;
-  color:            #a5b4fc                 !important;
-  border-color:     rgba(79,70,229,0.30)    !important;
-}
-
-.dark .badge-warning {
-  background-color: rgba(245,158,11,0.12)   !important;
-  color:            #fcd34d                 !important;
-  border-color:     rgba(245,158,11,0.35)   !important;
-}
-
-.dark .badge-error {
-  background-color: rgba(239,68,68,0.12)    !important;
-  color:            #fca5a5                 !important;
-  border-color:     rgba(239,68,68,0.30)    !important;
-}
-
-.dark .badge-success {
-  background-color: rgba(16,185,129,0.12)   !important;
-  color:            #6ee7b7                 !important;
-  border-color:     rgba(16,185,129,0.30)   !important;
 }
 

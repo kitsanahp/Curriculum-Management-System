@@ -13,6 +13,10 @@ export default defineConfig({
   optimizeDeps: {
     include: ['pdfjs-dist'],
   },
+  build: {
+    // ห้ามแนบ source map ใน production — กัน source code ต้นฉบับรั่วผ่าน .map ใน public
+    sourcemap: false,
+  },
   server: {
     port: 5173,
     proxy: {

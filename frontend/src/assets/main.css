@@ -1,19 +1,42 @@
+/* Google Fonts — Sarabun (เฉพาะโซนเอกสาร มคอ. / TQF2 comparison) */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
 /* Entry point — import ก่อน @tailwind เพื่อให้ PostCSS ประมวลผล @layer ถูกต้อง */
 @import './css/base.css';
 @import './css/components.css';
 @import './css/animations.css';
 @import './css/transitions.css';
 
-/* ── Design token: border-radius scale ──────────────────────────────────── */
+/* ── Anuphan (UI font) — self-hosted variable font, น้ำหนัก 300–700 ─────────
+   ไฟล์ใน src/assets/fonts/ (thai + latin subset) แทนการโหลดจาก Google Fonts */
+@font-face {
+  font-family: 'Anuphan';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url(./fonts/Anuphan-thai.woff2) format('woff2');
+  unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+@font-face {
+  font-family: 'Anuphan';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url(./fonts/Anuphan-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Design token: border-radius scale (Sharper Square UI) ──────────────── */
 :root {
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-sm: 1px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
 
   /* ── Typography: font family ─────────────────────────────────────────── */
-  --font-ui:       'Anuphan', system-ui, sans-serif;
-  --font-document: 'Sarabun', sans-serif;
+  --font-ui:       'Anuphan', system-ui, sans-serif;             /* body / UI */
+  --font-heading:  var(--font-ui);                               /* หัวข้อ (display) */
+  --font-document: 'Anuphan', sans-serif;                        /* เนื้อหา มคอ. */
   --font-sans:     var(--font-ui);
 
   /* ── Typography: weight tokens ───────────────────────────────────────── */

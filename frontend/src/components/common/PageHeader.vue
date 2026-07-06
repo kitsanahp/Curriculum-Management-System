@@ -6,14 +6,14 @@
 
       <!-- Title row — รองรับ icon นำหน้าและ badge ด้านข้าง -->
       <div class="flex items-center gap-3 flex-wrap">
-        <component
+        <span
           v-if="icon"
-          :is="icon"
-          :weight="iconWeight"
-          class="w-7 h-7 text-primary-600 shrink-0"
+          class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-500 shrink-0"
           aria-hidden="true"
-        />
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+        >
+          <component :is="icon" :weight="iconWeight" class="w-5 h-5" />
+        </span>
+        <h1 class="text-xl font-semibold text-gray-900">
           {{ title }}
         </h1>
         <slot name="title-badge" />

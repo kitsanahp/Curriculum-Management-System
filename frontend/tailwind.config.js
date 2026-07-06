@@ -4,7 +4,6 @@ import typography from '@tailwindcss/typography';
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts}'],
-  darkMode: 'class',
   theme: {
     extend: {
       // ── Typography Scale (6 ระดับเท่านั้น) ─────────────────────────────────
@@ -27,16 +26,16 @@ export default {
         'display': ['1.5rem',    { lineHeight: '2rem' }],     // 24 / 32
       },
 
-      // ── Border Radius (4 ค่าหลัก) ─────────────────────────────────────────
+      // ── Border Radius (Sharper / Sleek Square UI) ────────────────────────
       borderRadius: {
         'none': '0',
-        'sm':   '4px',    // pills, badges
-        DEFAULT: '4px',
-        'md':   '8px',    // inputs, dropdowns
-        'lg':   '12px',   // CARDS — มาตรฐานหลัก
-        'xl':   '12px',   // alias ของ lg เพื่อ backward compat
-        '2xl':  '16px',   // modal เท่านั้น
-        '3xl':  '16px',   // alias
+        'sm':   '1px',
+        DEFAULT: '2px',
+        'md':   '3px',
+        'lg':   '4px',
+        'xl':   '6px',
+        '2xl':  '8px',
+        '3xl':  '8px',
         'full': '9999px',
       },
 
@@ -54,18 +53,18 @@ export default {
           800: '#3730a3',
           900: '#312e81',
         },
-        // ── Neutral (Gray) — เก็บเดิม ──────────────────────────────────────
+        // ── Neutral (Zinc) — High contrast premium gray ─────────────────────
         gray: {
-          50:  '#f9fafb',
-          100: '#f3f4f6',
-          200: '#e5e7eb',
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#6b7280',
-          600: '#4b5563',
-          700: '#374151',
-          800: '#1f2937',
-          900: '#111827',
+          50:  '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d4d4d8',
+          400: '#a1a1aa',
+          500: '#71717a',
+          600: '#52525b',
+          700: '#3f3f46',
+          800: '#27272a',
+          900: '#18181b',
         },
         // ── Semantic — ขยาย ให้มี scale ใช้งานง่ายขึ้น ────────────────────
         status: {
@@ -98,7 +97,9 @@ export default {
 
       fontFamily: {
         sans:     ['Anuphan', 'system-ui', 'sans-serif'],
-        document: ['Sarabun', 'sans-serif'],
+        heading:  ['Anuphan', 'system-ui', 'sans-serif'],
+        document: ['Anuphan', 'sans-serif'],
+        sarabun:  ['Sarabun', 'sans-serif'],
       },
       fontWeight: {
         light:     '300',

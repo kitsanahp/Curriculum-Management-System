@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { login, register, getMe, changePassword, devLogin, logout } = require('../controllers/authController');
+const { login, register, getMe, changePassword, forgotPassword, resetPassword, devLogin, logout } = require('../controllers/authController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { Department } = require('../models');
 const rateLimit = require('express-rate-limit');
@@ -13,27 +13,38 @@ const loginLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
+// Rate limiter สำหรับ reset password เพื่อกัน brute-force token
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { success: false, message: 'มีการพยายามตั้งรหัสผ่านบ่อยเกินไป กรุณาลองใหม่ใน 15 นาที' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post('/login', loginLimiter, login);
+router.post('/forgot-password', resetLimiter, forgotPassword);
+router.post('/reset-password', resetLimiter, resetPassword);
 router.post('/dev-login', devLogin);
 router.post('/logout', authenticate, logout);
 router.post('/register', register);
-let cachedDepartments = null;
-let lastCacheTime = 0;
+// cache ผ่านโมดูลกลาง — ถูก invalidate ทันทีเมื่อแอดมินเพิ่ม/แก้/ลบภาควิชา
+const { cache } = require('../cache/publicCache');
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 router.get('/departments-public', async (req, res, next) => {
   try {
-    if (cachedDepartments && (Date.now() - lastCacheTime < CACHE_TTL)) {
-      return res.json({ success: true, data: cachedDepartments });
+    if (cache.departments && (Date.now() - cache.departmentsCachedAt < CACHE_TTL)) {
+      return res.json({ success: true, data: cache.departments });
     }
 
     const all = await Department.findAll({ order: [['id', 'ASC']] });
     const seen = new Set();
     const departments = all.filter(d => seen.has(d.name) ? false : seen.add(d.name));
     departments.sort((a, b) => a.name.localeCompare(b.name, 'th'));
-    
-    cachedDepartments = departments;
-    lastCacheTime = Date.now();
+
+    cache.departments = departments;
+    cache.departmentsCachedAt = Date.now();
 
     res.json({ success: true, data: departments });
   } catch (e) { next(e); }

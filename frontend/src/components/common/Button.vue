@@ -105,10 +105,11 @@ const SPINNER_SIZE = {
 };
 
 const VARIANT_CLASSES = {
-  primary:   'bg-primary-600 text-white shadow-sm hover:bg-primary-500',
-  secondary: 'bg-white text-gray-700 ring-1 ring-inset ring-gray-300 shadow-sm hover:bg-gray-50',
-  danger:    'bg-red-600 text-white shadow-sm hover:bg-red-500',
-  success:   'bg-emerald-600 text-white shadow-sm hover:bg-emerald-500',
-  ghost:     'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+  primary:          'bg-primary-600 text-white shadow-sm hover:bg-primary-500',
+  secondary:        'bg-white text-gray-700 ring-1 ring-inset ring-gray-300 shadow-sm hover:bg-gray-50',
+  danger:           'bg-red-600 text-white shadow-sm hover:bg-red-500',
+  'danger-outline': 'bg-white text-red-500 border-2 border-red-400 hover:bg-red-50 hover:border-red-500 shadow-2xs',
+  success:          'bg-emerald-600 text-white shadow-sm hover:bg-emerald-500',
+  ghost:            'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
 };
 </script>

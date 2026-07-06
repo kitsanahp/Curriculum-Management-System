@@ -2,19 +2,29 @@ const path = require('path');
 const fs = require('fs');
 const { sequelize, Document, DocumentVersion, Curriculum, AuditLog, Notification, User } = require('../models');
 const { ROLES, CURRICULUM_STATUS } = require('../config/constants');
-const { normalizeSymbols } = require('../services/tqf2SymbolNormalizer');
-const { preprocessDocxFile } = require('../services/docxPreprocessor');
+const { canAccessCurriculum, canAccessCurriculumFile } = require('../utils/curriculumAccess');
+const { getServiceUnitDeptId, registrarCanAccess } = require('../utils/registrarAccess');
+const { renderDocxHtml } = require('../services/docxPreprocessor');
+
+// guard กลางสำหรับ endpoint ที่ปล่อยไฟล์ (download/preview) — ใช้ scope เดียวกับ getDocuments
+// ป้องกัน IDOR: ผู้ใช้เดา id แล้วโหลดเอกสารข้ามสาขา/ข้าม role
+// delegate ไป helper กลางใน utils/curriculumAccess เพื่อให้ทุก controller ตัดสินสิทธิ์เหมือนกัน (กัน drift)
+const canReadCurriculumFile = (req, curriculum) => canAccessCurriculumFile(req.user, curriculum);
 
 exports.getDocuments = async (req, res, next) => {
   try {
     const { curriculum_id } = req.params;
     const curriculum = await Curriculum.findByPk(curriculum_id);
     if (!curriculum) return res.status(404).json({ success: false, message: 'ไม่พบหลักสูตร' });
-    if ((req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) && curriculum.department_id !== req.user.department_id) {
-      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
+    if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+      const allowed = await canAccessCurriculum(req.user, {
+        departmentId: curriculum.department_id, curriculumId: curriculum.id,
+      });
+      if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
     }
-    if (req.user.role === ROLES.REGISTRAR && curriculum.degree_level !== 'bachelor') {
-      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ (สิทธิ์นายทะเบียนเห็นเฉพาะ ป.ตรี)' });
+    if (req.user.role === ROLES.REGISTRAR
+        && !registrarCanAccess(curriculum, await getServiceUnitDeptId())) {
+      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงหลักสูตรนี้' });
     }
 
     const { page, limit } = req.query;
@@ -24,10 +34,10 @@ exports.getDocuments = async (req, res, next) => {
       include: [
         {
           model: DocumentVersion, as: 'versions',
-          include: [{ association: 'uploader', attributes: ['id', 'name', 'role'] }],
+          include: [{ association: 'uploader', attributes: ['id', 'name', 'role', 'academic_position'] }],
           order: [['version_number', 'DESC']]
         },
-        { association: 'uploader', attributes: ['id', 'name', 'role'] }
+        { association: 'uploader', attributes: ['id', 'name', 'role', 'academic_position'] }
       ],
       order: [['created_at', 'DESC']]
     };
@@ -56,6 +66,13 @@ exports.upload = async (req, res, next) => {
 
   const curriculum = await Curriculum.findByPk(curriculum_id, { attributes: ['id', 'status', 'department_id'] });
   if (!curriculum) return res.status(404).json({ success: false, message: 'ไม่พบหลักสูตร' });
+
+  if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+    const allowed = await canAccessCurriculum(req.user, {
+      departmentId: curriculum.department_id, curriculumId: curriculum.id,
+    });
+    if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
+  }
 
   const FACULTY_UPLOADABLE = [CURRICULUM_STATUS.PENDING_DEPARTMENT, CURRICULUM_STATUS.REVISION];
   const ADMIN_UPLOADABLE   = [CURRICULUM_STATUS.DEPARTMENT_SUBMITTED, CURRICULUM_STATUS.UNDER_COMMITTEE, CURRICULUM_STATUS.PENDING_ADMIN_RECHECK];
@@ -151,9 +168,12 @@ exports.deleteDocument = async (req, res, next) => {
     });
     if (!doc) return res.status(404).json({ success: false, message: 'ไม่พบไฟล์' });
 
-    // ตรวจ ownership — faculty/staff ลบได้เฉพาะ doc ของ dept ตัวเอง
-    if ((req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) && doc.curriculum?.department_id !== req.user.department_id) {
-      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ลบไฟล์นี้' });
+    // ตรวจ ownership — faculty ลบได้เฉพาะหลักสูตรที่ตนอยู่ในทีม | staff เฉพาะภาควิชาตน
+    if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+      const allowed = await canAccessCurriculum(req.user, {
+        departmentId: doc.curriculum?.department_id, curriculumId: doc.curriculum_id,
+      });
+      if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ลบไฟล์นี้' });
     }
 
     doc.is_deleted = true;
@@ -169,8 +189,12 @@ exports.deleteDocument = async (req, res, next) => {
 
 exports.download = async (req, res, next) => {
   try {
-    const doc = await Document.findByPk(req.params.id);
+    const doc = await Document.findByPk(req.params.id, {
+      include: [{ model: Curriculum, as: 'curriculum', attributes: ['id', 'department_id', 'degree_level'] }]
+    });
     if (!doc || doc.is_deleted) return res.status(404).json({ success: false, message: 'ไม่พบไฟล์' });
+    if (!(await canReadCurriculumFile(req, doc.curriculum)))
+      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงไฟล์นี้' });
     const filePath = path.join(__dirname, '../../uploads/documents', doc.stored_name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, message: 'ไฟล์ไม่พบในระบบ' });
     
@@ -184,8 +208,12 @@ exports.download = async (req, res, next) => {
 
 exports.preview = async (req, res, next) => {
   try {
-    const doc = await Document.findByPk(req.params.id);
+    const doc = await Document.findByPk(req.params.id, {
+      include: [{ model: Curriculum, as: 'curriculum', attributes: ['id', 'department_id', 'degree_level'] }]
+    });
     if (!doc || doc.is_deleted) return res.status(404).json({ success: false, message: 'ไม่พบไฟล์' });
+    if (!(await canReadCurriculumFile(req, doc.curriculum)))
+      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงไฟล์นี้' });
 
     const filePath = path.join(__dirname, '../../uploads/documents', doc.stored_name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, message: 'ไฟล์ไม่พบในระบบ' });
@@ -197,31 +225,36 @@ exports.preview = async (req, res, next) => {
       res.setHeader('Content-Type', 'application/pdf');
       fs.createReadStream(filePath).pipe(res);
     } else {
-      const cachePath = `${filePath}.cache.html`;
+      // cache v3 — bump เมื่อ pipeline เปลี่ยน (ตัด banner textbox/header + ตัดรูป EMF/WMF) เพื่อข้าม cache เก่า
+      const cachePath = `${filePath}.cache.v3.html`;
       if (fs.existsSync(cachePath)) {
         // ใช้ fs.promises.readFile แทน fs.readFileSync เพื่อไม่ให้ Block Event Loop
         const cachedHtml = await fs.promises.readFile(cachePath, 'utf8');
         return res.json({ success: true, type: 'docx', html: cachedHtml });
       }
 
-      const mammoth = require('mammoth');
-      // Pre-process DOCX to convert <w:sym> (Wingdings/Symbol) → Unicode
-      const processedBuffer = preprocessDocxFile(filePath);
-      const result = await mammoth.convertToHtml({ buffer: processedBuffer });
-      const normalizedHtml = normalizeSymbols(result.value);
-      
-      fs.writeFile(cachePath, normalizedHtml, 'utf8', err => {
+      // full pipeline: <w:sym> + textbox/header/footer + promote หัวข้อหมวด + normalize
+      const html = await renderDocxHtml(filePath);
+
+      fs.writeFile(cachePath, html, 'utf8', err => {
         if (err) console.error('Failed to write html cache:', err);
       });
-      res.json({ success: true, type: 'docx', html: normalizedHtml });
+      res.json({ success: true, type: 'docx', html });
     }
   } catch (error) { next(error); }
 };
 
 exports.previewVersion = async (req, res, next) => {
   try {
-    const version = await DocumentVersion.findByPk(req.params.version_id);
+    const version = await DocumentVersion.findByPk(req.params.version_id, {
+      include: [{
+        model: Document, as: 'document',
+        include: [{ model: Curriculum, as: 'curriculum', attributes: ['id', 'department_id', 'degree_level'] }]
+      }]
+    });
     if (!version) return res.status(404).json({ success: false, message: 'ไม่พบ version' });
+    if (!(await canReadCurriculumFile(req, version.document?.curriculum)))
+      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงไฟล์นี้' });
 
     const filePath = path.join(__dirname, '../../uploads/documents', version.stored_name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, message: 'ไฟล์ไม่พบในระบบ' });
@@ -234,31 +267,36 @@ exports.previewVersion = async (req, res, next) => {
       res.setHeader('Content-Type', 'application/pdf');
       fs.createReadStream(filePath).pipe(res);
     } else {
-      const cachePath = `${filePath}.cache.html`;
+      // cache v3 — bump เมื่อ pipeline เปลี่ยน (ตัด banner textbox/header + ตัดรูป EMF/WMF) เพื่อข้าม cache เก่า
+      const cachePath = `${filePath}.cache.v3.html`;
       if (fs.existsSync(cachePath)) {
         // ใช้ fs.promises.readFile แทน fs.readFileSync เพื่อไม่ให้ Block Event Loop
         const cachedHtml = await fs.promises.readFile(cachePath, 'utf8');
         return res.json({ success: true, type: 'docx', html: cachedHtml });
       }
 
-      const mammoth = require('mammoth');
-      // Pre-process DOCX to convert <w:sym> (Wingdings/Symbol) → Unicode
-      const processedBuffer = preprocessDocxFile(filePath);
-      const result = await mammoth.convertToHtml({ buffer: processedBuffer });
-      const normalizedHtml = normalizeSymbols(result.value);
-      
-      fs.writeFile(cachePath, normalizedHtml, 'utf8', err => {
+      // full pipeline: <w:sym> + textbox/header/footer + promote หัวข้อหมวด + normalize
+      const html = await renderDocxHtml(filePath);
+
+      fs.writeFile(cachePath, html, 'utf8', err => {
         if (err) console.error('Failed to write html cache:', err);
       });
-      res.json({ success: true, type: 'docx', html: normalizedHtml });
+      res.json({ success: true, type: 'docx', html });
     }
   } catch (error) { next(error); }
 };
 
 exports.downloadVersion = async (req, res, next) => {
   try {
-    const version = await DocumentVersion.findByPk(req.params.version_id, { include: ['document'] });
+    const version = await DocumentVersion.findByPk(req.params.version_id, {
+      include: [{
+        model: Document, as: 'document',
+        include: [{ model: Curriculum, as: 'curriculum', attributes: ['id', 'department_id', 'degree_level'] }]
+      }]
+    });
     if (!version) return res.status(404).json({ success: false, message: 'ไม่พบ version' });
+    if (!(await canReadCurriculumFile(req, version.document?.curriculum)))
+      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงไฟล์นี้' });
     const filePath = path.join(__dirname, '../../uploads/documents', version.stored_name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, message: 'ไฟล์ไม่พบในระบบ' });
     

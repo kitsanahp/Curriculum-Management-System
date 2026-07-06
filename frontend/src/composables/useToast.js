@@ -4,9 +4,9 @@ import { ref } from 'vue';
 const _toasts = ref([]);
 let _nextId = 0;
 
-function _add({ type = 'info', title, message = '', duration = 4500 }) {
+function _add({ type = 'info', title, message = '', duration = 4500, icon = null }) {
   const id = ++_nextId;
-  _toasts.value.push({ id, type, title, message });
+  _toasts.value.push({ id, type, title, message, icon });
   if (duration > 0) setTimeout(() => _remove(id), duration);
 }
 
@@ -18,10 +18,11 @@ function _remove(id) {
 export function useToast() {
   return {
     toasts:  _toasts,
-    success: (title, message = '') => _add({ type: 'success', title, message }),
-    error:   (title, message = '') => _add({ type: 'error',   title, message }),
-    info:    (title, message = '') => _add({ type: 'info',    title, message }),
-    warning: (title, message = '') => _add({ type: 'warning', title, message }),
+    success: (title, message = '', opts = {}) => _add({ type: 'success', title, message, ...opts }),
+    error:   (title, message = '', opts = {}) => _add({ type: 'error',   title, message, ...opts }),
+    info:    (title, message = '', opts = {}) => _add({ type: 'info',    title, message, ...opts }),
+    warning: (title, message = '', opts = {}) => _add({ type: 'warning', title, message, ...opts }),
+    show:    (opts) => _add(opts),
     remove:  _remove,
   };
 }

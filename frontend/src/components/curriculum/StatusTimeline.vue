@@ -28,8 +28,8 @@
               <div class="min-w-0">
                 <p class="text-sm font-bold text-gray-900 leading-snug">{{ getLabel(event) }}</p>
                 <p class="text-xs text-gray-500 mt-0.5 truncate">
-                  <span class="font-medium">{{ event.user?.name || 'ระบบ' }}</span>
-                  <span class="text-[10px] bg-gray-100 text-gray-400 px-1.5 py-px rounded ml-1">{{ formatDate(event.createdAt) }}</span>
+                  <span class="font-medium">{{ formatUserName(event.user) || 'ระบบ' }}</span>
+                  <span class="text-xs bg-gray-100 text-gray-500 px-1.5 py-px rounded ml-1">{{ formatDate(event.createdAt) }}</span>
                 </p>
               </div>
             </div>
@@ -49,7 +49,7 @@
           <!-- Duration pill -->
           <div class="flex items-center py-2">
             <span :class="[
-              'inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ring-1',
+              'inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ring-1',
               event.is_current
                 ? 'bg-primary-50 text-primary-700 ring-primary-200'
                 : event.duration_days > 30
@@ -59,7 +59,7 @@
                     : 'bg-gray-50 text-gray-500 ring-gray-200'
             ]">
               <span v-if="event.is_current" class="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse shrink-0" />
-              <template v-if="event.is_current">กำลังดำเนินการ <span class="font-black">{{ event.duration_days }} วัน</span></template>
+              <template v-if="event.is_current">กำลังดำเนินการ <span class="font-bold">{{ event.duration_days }} วัน</span></template>
               <template v-else>{{ event.duration_days }} วัน</template>
             </span>
           </div>
@@ -78,6 +78,7 @@ import {
 } from '@phosphor-icons/vue';
 import { PhSealCheck } from '@phosphor-icons/vue';
 import { formatThaiDateTime } from '@/utils/date';
+import { formatUserName } from '@/utils/user';
 import { COMMITTEE_LABELS } from '@/constants/committees';
 
 defineProps({

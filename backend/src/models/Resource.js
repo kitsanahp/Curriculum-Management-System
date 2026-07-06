@@ -10,7 +10,8 @@ const Resource = sequelize.define('Resource', {
   description: { type: DataTypes.TEXT, allowNull: true },
   category:    { type: DataTypes.STRING(100), allowNull: true },
   created_by:  { type: DataTypes.INTEGER, allowNull: false },
-  is_active:   { type: DataTypes.BOOLEAN, defaultValue: true }
+  is_active:   { type: DataTypes.BOOLEAN, defaultValue: true },
+  is_pinned:   { type: DataTypes.BOOLEAN, defaultValue: false }
 }, {
   tableName: 'resources',
   timestamps: true,

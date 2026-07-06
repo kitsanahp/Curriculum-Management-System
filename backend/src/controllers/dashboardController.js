@@ -1,29 +1,28 @@
 const { Op } = require('sequelize');
 const {
-  sequelize, Curriculum, Department,
+  Curriculum, Department,
   CurriculumTeam, CommitteeStep,
 } = require('../models');
-const { ROLES } = require('../config/constants');
+const { listScope } = require('../utils/curriculumAccess');
 
 exports.getSummary = async (req, res, next) => {
   try {
-    const { role, department_id, email } = req.user;
-
     const where = {};
     const extraInclude = [];
 
     // Role-based data scope — done entirely at backend
-    if (role === ROLES.FACULTY || role === ROLES.STAFF) {
-      extraInclude.push({
-        model: CurriculumTeam,
-        as: 'team',
-        attributes: [],
-        required: false,
-      });
-      where[Op.or] = [
-        { department_id },
-        sequelize.where(sequelize.col('team.email'), email),
-      ];
+    // faculty → เฉพาะหลักสูตรที่ตนอยู่ในทีม | staff → ทั้งภาควิชา
+    const scope = listScope(req.user);
+    if (scope) {
+      if (scope.needsTeam) {
+        extraInclude.push({
+          model: CurriculumTeam,
+          as: 'team',
+          attributes: [],
+          required: false,
+        });
+      }
+      Object.assign(where, { [Op.and]: [scope.condition] });
     }
     // ADMIN / EXECUTIVE: no filter → see everything
 
@@ -35,7 +34,7 @@ exports.getSummary = async (req, res, next) => {
         {
           model: CommitteeStep,
           as: 'committee_steps',
-          attributes: ['id', 'committee_type', 'step_order', 'status'],
+          attributes: ['id', 'committee_type', 'step_order', 'status', 'decision_date'],
         },
       ],
       order: [['updated_at', 'DESC']],

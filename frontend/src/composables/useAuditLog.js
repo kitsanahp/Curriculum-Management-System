@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '@/services/api';
+import { curriculumService } from '@/services/curriculumService';
 import dayjs from 'dayjs';
 import {
   PhClipboardText, PhFolderOpen, PhPaperPlaneTilt,
@@ -45,7 +45,7 @@ export function useAuditLog() {
   const loadHistory = async () => {
     historyLoading.value = true;
     try {
-      const { data } = await api.get(`/curricula/${route.params.id}/audit-logs`);
+      const { data } = await curriculumService.getAuditLogs(route.params.id);
       auditLogs.value = data.data || [];
     } finally { historyLoading.value = false; }
   };

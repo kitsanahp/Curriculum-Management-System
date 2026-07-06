@@ -16,13 +16,17 @@
           : 'cursor-pointer text-gray-900'
       ]"
     >
-      <span class="block truncate min-w-0" :class="selectedLabel ? 'text-gray-900' : 'text-gray-400'">
-        {{ selectedLabel || placeholder }}
+      <span class="flex items-center gap-2 min-w-0">
+        <component v-if="icon" :is="icon" class="h-4 w-4 text-gray-400 shrink-0" aria-hidden="true" />
+        <span class="block truncate min-w-0" :class="selectedLabel ? 'text-gray-900' : 'text-gray-400'">
+          {{ selectedLabel || placeholder }}
+        </span>
       </span>
       <PhCaretDown
         weight="bold"
         class="h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200 ease-out"
         :class="open ? 'rotate-180' : 'rotate-0'"
+        aria-hidden="true"
       />
     </button>
 
@@ -41,6 +45,7 @@
           role="listbox"
           class="fixed z-[9999] rounded-lg bg-white shadow-lg ring-1 ring-gray-200 overflow-hidden"
           :style="panelStyle"
+          @keydown="handleListboxKeydown"
         >
           <div class="py-1 overflow-auto overscroll-contain" :style="{ maxHeight: maxPanelHeight }">
             <button
@@ -51,7 +56,7 @@
               :aria-selected="option.value === modelValue"
               @click="select(option.value)"
               :class="[
-                'w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-all duration-150 ease-ios gap-3',
+                'w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-all duration-150 ease-ios gap-3',
                 option.value === modelValue
                   ? 'bg-primary-50 text-primary-700 font-semibold'
                   : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
@@ -68,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { PhCheck, PhCaretDown } from '@phosphor-icons/vue';
 
 const props = defineProps({
@@ -76,6 +81,7 @@ const props = defineProps({
   options:    { type: Array,   default: () => [] },
   placeholder:{ type: String,  default: 'เลือกรายการ' },
   disabled:   { type: Boolean, default: false },
+  icon:       { type: [Object, Function], default: null },
 });
 
 const emit = defineEmits(['update:modelValue', 'change']);
@@ -110,8 +116,37 @@ const updatePosition = () => {
 
 const toggle = () => {
   if (props.disabled) return;
-  if (!open.value) updatePosition();
+  if (!open.value) {
+    updatePosition();
+    // Focus selected option (or first) after panel renders
+    nextTick(() => {
+      const opts = panelRef.value?.querySelectorAll('[role="option"]');
+      if (!opts?.length) return;
+      const selected = Array.from(opts).find(el => el.getAttribute('aria-selected') === 'true');
+      (selected || opts[0])?.focus();
+    });
+  }
   open.value = !open.value;
+};
+
+const handleListboxKeydown = (e) => {
+  const opts = Array.from(panelRef.value?.querySelectorAll('[role="option"]') ?? []);
+  if (!opts.length) return;
+  const idx = opts.indexOf(document.activeElement);
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    opts[Math.min(idx + 1, opts.length - 1)]?.focus();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    opts[Math.max(idx - 1, 0)]?.focus();
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    opts[0]?.focus();
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    opts[opts.length - 1]?.focus();
+  }
 };
 
 const select = (value) => {

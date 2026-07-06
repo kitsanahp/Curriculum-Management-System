@@ -11,13 +11,20 @@ const CommitteeStep = require('./CommitteeStep');
 const CommitteeDocument = require('./CommitteeDocument');
 const AuditLog = require('./AuditLog');
 const Announcement = require('./Announcement');
+const AnnouncementAttachment = require('./AnnouncementAttachment');
 const Notification = require('./Notification');
 const Resource = require('./Resource');
 const CalendarEvent = require('./CalendarEvent');
+const DegreeTitle = require('./DegreeTitle');
+const Major = require('./Major');
 
 // Department <-> User
 Department.hasMany(User, { foreignKey: 'department_id', as: 'users' });
 User.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
+
+// Department <-> Major (สาขาวิชาในภาควิชา แยกระดับปริญญา)
+Department.hasMany(Major, { foreignKey: 'department_id', as: 'majors' });
+Major.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
 
 // Department <-> Curriculum
 Department.hasMany(Curriculum, { foreignKey: 'department_id', as: 'curricula' });
@@ -82,6 +89,10 @@ Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 User.hasMany(Announcement, { foreignKey: 'created_by', as: 'announcements' });
 Announcement.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
+// Announcement <-> AnnouncementAttachment
+Announcement.hasMany(AnnouncementAttachment, { foreignKey: 'announcement_id', as: 'attachments' });
+AnnouncementAttachment.belongsTo(Announcement, { foreignKey: 'announcement_id', as: 'announcement' });
+
 // User (creator) <-> Resource
 User.hasMany(Resource, { foreignKey: 'created_by', as: 'resources' });
 Resource.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
@@ -104,7 +115,10 @@ module.exports = {
   CommitteeDocument,
   AuditLog,
   Announcement,
+  AnnouncementAttachment,
   Notification,
   Resource,
-  CalendarEvent
+  CalendarEvent,
+  DegreeTitle,
+  Major
 };

@@ -15,59 +15,75 @@
  <div class="flex-1 min-w-0">
  <p class="text-sm font-semibold text-gray-900 truncate leading-tight">{{ doc.original_name }}</p>
  <div class="flex items-center gap-1.5 mt-0.5">
- <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{{ doc.file_type }}</span>
- <span v-if="versionLabel" class="text-[10px] font-semibold text-primary-600">{{ versionLabel }}</span>
- <span v-if="doc.file_size" class="text-[10px] text-gray-400">· {{ formatFileSize(doc.file_size) }}</span>
+ <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">{{ doc.file_type }}</span>
+ <span v-if="versionLabel" class="text-xs font-semibold text-primary-600">{{ versionLabel }}</span>
+ <span v-if="doc.file_size" class="text-xs text-gray-500">· {{ formatFileSize(doc.file_size) }}</span>
  </div>
  </div>
 
  <!-- Actions (right) -->
  <div class="flex items-center gap-1 shrink-0">
 
- <!-- Annotation count (DOCX only) -->
+ <!-- Annotation count (DOCX only) — desktop: static badge -->
  <div
  v-if="doc.file_type !== 'pdf' && !loading && !error"
- class="flex items-center gap-1.5 text-[11px] text-gray-500 bg-gray-100 px-2 py-1 rounded mr-1"
+ class="hidden md:flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md mr-1"
  >
  <PhChatCircleDots class="w-3.5 h-3.5" />
  {{ annotations.length }} ความเห็น
  </div>
 
+ <!-- Annotation toggle (DOCX only) — mobile: opens sidebar drawer -->
+ <button
+ v-if="doc.file_type !== 'pdf' && !loading && !error"
+ @click="showSidebar = true"
+ aria-label="แสดงความเห็น"
+ class="md:hidden relative w-11 h-11 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-150 active:scale-90"
+ >
+ <PhChatCircleDots class="w-5 h-5" aria-hidden="true" />
+ <span v-if="annotations.length"
+ class="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold leading-none">
+ {{ annotations.length > 9 ? '9+' : annotations.length }}
+ </span>
+ </button>
+
  <!-- Print -->
  <button
  v-if="!loading && !error"
  @click="handlePrint"
- class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-150"
+ aria-label="พิมพ์เอกสาร"
+ class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
  >
- <PhPrinter class="w-4 h-4" />
+ <PhPrinter class="w-4 h-4" aria-hidden="true" />
  </button>
 
  <!-- Download -->
- <button @click="$emit('download')" class="btn-secondary text-xs py-1.5 px-3 ml-0.5">
- <PhDownloadSimple class="w-3.5 h-3.5" />
- ดาวน์โหลด
+ <button @click="$emit('download')" aria-label="ดาวน์โหลด" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.97] transition-all duration-150 ml-0.5">
+ <PhDownloadSimple class="w-3.5 h-3.5 shrink-0" />
+ <span class="hidden sm:inline">ดาวน์โหลด</span>
  </button>
 
  <!-- Admin review actions -->
  <template v-if="canReject || canApprove">
- <div class="w-px h-6 bg-gray-200 mx-2"></div>
- <button v-if="canReject" @click="$emit('reject')" class="btn-danger text-xs py-1.5 px-3">
- <PhArrowsClockwise class="w-3.5 h-3.5" />
- ส่งกลับแก้ไข
+ <div class="w-px h-6 bg-gray-200 mx-1 sm:mx-2"></div>
+ <button v-if="canReject" @click="$emit('reject')" aria-label="ส่งกลับแก้ไข" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 hover:ring-red-400 active:scale-[0.97] transition-all duration-200">
+ <PhArrowsClockwise class="w-3.5 h-3.5 shrink-0" weight="bold" />
+ <span class="hidden sm:inline">ส่งกลับแก้ไข</span>
  </button>
- <button v-if="canApprove" @click="$emit('approve')" class="btn-primary text-xs py-1.5 px-3">
- <PhUsersThree class="w-3.5 h-3.5" />
- นำเข้าคณะกรรมการ
+ <button v-if="canApprove" @click="$emit('approve')" aria-label="นำเข้าคณะกรรมการ" class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 active:scale-[0.97] transition-all duration-200">
+ <PhCheck class="w-3.5 h-3.5 shrink-0" weight="bold" />
+ <span class="hidden sm:inline">นำเข้าคณะกรรมการ</span>
  </button>
  </template>
 
  <!-- Close -->
- <div class="w-px h-6 bg-gray-200 mx-2"></div>
+ <div class="w-px h-6 bg-gray-200 mx-1 sm:mx-2"></div>
  <button
  @click="$emit('close')"
- class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-all duration-150"
+ aria-label="ปิดตัวอย่างเอกสาร"
+ class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
  >
- <PhX class="w-5 h-5" />
+ <PhX class="w-5 h-5" aria-hidden="true" />
  </button>
  </div>
  </div>
@@ -99,24 +115,24 @@
  />
 
  <!-- DOCX: content + annotation sidebar -->
- <div v-else-if="htmlContent" class="flex h-full min-h-0">
+ <div v-else-if="htmlContent" class="flex h-full min-h-0 relative">
 
  <!-- Document content area -->
  <div
- class="flex-1 overflow-y-auto bg-gray-50 relative"
+ class="flex-1 overflow-y-auto bg-gray-100 relative"
  ref="docAreaRef"
  @mouseup="handleMouseUp"
  >
  <!-- DOCX header note -->
  <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-1.5 flex items-center gap-2">
  <PhInfo class="w-3 h-3 text-gray-400 shrink-0" />
- <span class="text-[11px] text-gray-500">เลือกข้อความเพื่อ <strong class="text-gray-700 font-semibold">ไฮไลท์</strong> หรือ <strong class="text-gray-700 font-semibold">เพิ่มความเห็น</strong></span>
+ <span class="text-xs text-gray-500">เลือกข้อความเพื่อ <strong class="text-gray-700 font-semibold">ไฮไลท์</strong> หรือ <strong class="text-gray-700 font-semibold">เพิ่มความเห็น</strong></span>
  </div>
 
- <div class="max-w-[860px] mx-auto my-5 bg-white doc-paper rounded shadow overflow-y-auto overflow-x-hidden">
+ <div class="w-full max-w-[1080px] mx-auto my-6 sm:my-8 bg-white doc-paper rounded-xl shadow-lg ring-1 ring-gray-900/5 overflow-y-auto overflow-x-auto">
  <div
  ref="docContentRef"
- class="px-12 py-10 prose prose-sm max-w-none select-text font-document
+ class="px-4 py-6 sm:px-12 sm:py-10 prose prose-sm max-w-none select-text font-sarabun
  prose-headings:font-semibold prose-headings:text-gray-900
  prose-p:text-gray-700 prose-p:leading-relaxed
  prose-table:text-sm prose-td:py-2 prose-th:py-2
@@ -132,67 +148,81 @@
  class="fixed z-30 pointer-events-none"
  :style="{ top: selectionInfo.toolbarY + 'px', left: selectionInfo.toolbarX + 'px', transform: 'translateX(-50%)' }"
  >
- <div class="pointer-events-auto bg-gray-900 rounded px-2.5 py-2 flex items-center gap-2 shadow shadow-black/50 border border-white/10">
- <!-- Label -->
- <span class="text-[10px] text-gray-400 font-medium pl-0.5 whitespace-nowrap">ไฮไลท์:</span>
- <!-- Color buttons — click = highlight immediately -->
+ <div class="selection-toolbar pointer-events-auto flex items-center gap-2 px-2.5 py-1.5">
+ <!-- Color buttons — circular -->
  <div class="flex items-center gap-1">
  <button
  v-for="c in colorOptions"
  :key="c.value"
  @mousedown.prevent="quickHighlight(c.value)"
- class="w-8 h-8 rounded transition-all hover:scale-110 active:scale-95 ring-2 ring-offset-1 ring-offset-gray-900 ring-transparent hover:ring-white/50"
+ class="w-6 h-6 rounded-full shadow-sm transition-all duration-150 hover:scale-110 active:scale-95 ring-2 ring-offset-1 ring-offset-white ring-black/10 hover:ring-gray-400"
  :style="{ backgroundColor: c.hex }"
+ :aria-label="`ไฮไลท์สี${c.label}`"
  />
  </div>
- <div class="w-px h-6 bg-white/20"></div>
+ <div class="w-px h-4 bg-gray-200 shrink-0 mx-0.5"></div>
  <!-- Comment button -->
  <button
  @mousedown.prevent="openCommentInput"
- class="flex items-center gap-1.5 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-white/15 active:bg-white/25 transition-colors whitespace-nowrap"
+ class="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-all duration-150 whitespace-nowrap"
  >
- <PhChatCircle class="w-3.5 h-3.5" />
- + ความเห็น
+ <PhChatCircle class="w-3.5 h-3.5 shrink-0" />
+ ความเห็น
  </button>
- </div>
- <div class="flex justify-center">
- <div class="w-2.5 h-2.5 bg-gray-900 rotate-45 -mt-1 rounded"></div>
  </div>
  </div>
  </div>
 
- <!-- ── Annotations sidebar ── -->
- <div class="doc-sidebar w-[300px] bg-white border-l border-gray-200 flex flex-col shrink-0">
+ <!-- ── Mobile backdrop (tap to close annotation drawer) ── -->
+ <Transition
+ enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0"
+ leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
+ <div v-if="showSidebar" class="absolute inset-0 bg-slate-900/40 z-30 md:hidden" @click="showSidebar = false" />
+ </Transition>
+
+ <!-- ── Annotations sidebar ──
+      mobile : overlay drawer slides from right (toggled via showSidebar)
+      desktop: static column, always visible -->
+ <div class="doc-sidebar absolute inset-y-0 right-0 z-40 w-[85vw] max-w-[320px] transition-transform duration-300 ease-out
+      md:static md:z-auto md:w-[300px] lg:w-[340px] md:max-w-none md:translate-x-0
+      bg-gray-50 border-l border-gray-200 flex flex-col shrink-0"
+ :class="showSidebar ? 'translate-x-0 shadow-2xl' : 'translate-x-full md:shadow-none'">
  <!-- Sidebar header -->
  <div class="px-4 py-2.5 border-b border-gray-200 flex items-center justify-between shrink-0 bg-gray-50/60">
  <div class="flex items-center gap-2">
  <PhChatCircleDots class="w-3.5 h-3.5 text-gray-400" />
- <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">ความเห็น</span>
- <span class="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{{ unresolvedCount }}</span>
+ <span class="text-xs font-semibold text-gray-700">ความเห็น</span>
+ <span class="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">{{ unresolvedCount }}</span>
  </div>
+ <div class="flex items-center gap-1.5">
  <button
  @click="showResolved = !showResolved"
- class="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+ class="text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-all duration-150 whitespace-nowrap"
  >
  {{ showResolved ? 'ซ่อนที่แก้แล้ว' : 'ดูที่แก้แล้ว' }}
  </button>
+ <button @click="showSidebar = false" aria-label="ปิดความเห็น"
+ class="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 shrink-0">
+ <PhX class="w-4 h-4" aria-hidden="true" />
+ </button>
+ </div>
  </div>
 
  <!-- Comment composer (appears in sidebar when comment button clicked) -->
  <div v-if="showCommentInput" class="border-b border-primary-200 bg-primary-200/20 p-3 shrink-0">
- <div class="rounded px-3 py-2 text-xs text-gray-600 font-document line-clamp-2 mb-2.5 border border-black/5"
+ <div class="rounded px-3 py-2 text-xs text-gray-600 font-sarabun line-clamp-2 mb-2.5 border border-black/5"
  :style="{ backgroundColor: currentColorHex + '80' }">
  "{{ selectionInfo?.text }}"
  </div>
  <!-- Color selector -->
  <div class="flex items-center gap-1.5 mb-2.5">
- <span class="text-[10px] text-gray-500 font-medium">สีไฮไลท์</span>
+ <span class="text-xs text-gray-500 font-medium">สีไฮไลท์</span>
  <div class="flex gap-1 ml-1">
  <button
  v-for="c in colorOptions"
  :key="c.value"
  @click="pendingColor = c.value"
- :class="['w-6 h-6 rounded-full transition-all hover:scale-110', pendingColor === c.value ? 'ring-2 ring-offset-1 ring-gray-500 scale-110' : '']"
+ :class="['w-6 h-6 rounded-full shadow-sm transition-all hover:scale-110', pendingColor === c.value ? 'ring-2 ring-offset-2 ring-offset-white ring-gray-700 scale-110' : 'ring-1 ring-black/10']"
  :style="{ backgroundColor: c.hex }"
  />
  </div>
@@ -202,15 +232,14 @@
  ref="commentInputRef"
  v-model="newCommentText"
  rows="3"
- placeholder="พิมพ์ความเห็น... (ไม่บังคับ)"
- class="input-base text-sm resize-none w-full"
+ placeholder="เพิ่มความเห็นหรือข้อเสนอแนะ (ไม่บังคับ)"
+ class="block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-all"
  @keydown.ctrl.enter="submitComment"
  @keydown.escape="cancelComment"
  />
- <p class="text-[10px] text-gray-400 mt-1 mb-2">Ctrl+Enter เพื่อบันทึก</p>
- <div class="flex gap-2">
- <button @click="cancelComment" class="flex-1 btn-secondary text-xs py-1.5">ยกเลิก</button>
- <button @click="submitComment" :disabled="submitting" class="flex-1 btn-primary text-xs py-1.5">
+ <div class="flex gap-2 mt-2">
+ <button @click="cancelComment" class="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 active:scale-[0.97] transition-all duration-150">ยกเลิก</button>
+ <button @click="submitComment" :disabled="submitting" class="flex-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-500 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150">
  {{ submitting ? '...' : 'บันทึก' }}
  </button>
  </div>
@@ -224,54 +253,60 @@
  </div>
 
  <!-- Annotation cards -->
- <div v-if="visibleAnnotations.length > 0" ref="sidebarRef" class="flex-1 overflow-y-auto">
+ <div v-if="visibleAnnotations.length > 0" ref="sidebarRef" class="flex-1 overflow-y-auto p-3 space-y-2.5">
  <div
  v-for="ann in visibleAnnotations"
  :key="ann.id"
  :data-card-id="ann.id"
  :class="[
- 'px-4 py-3.5 cursor-pointer transition-colors border-b border-gray-100',
- activeAnnotationId === ann.id ? 'bg-primary-50/50' : 'hover:bg-gray-50/60',
- ann.is_resolved ? 'opacity-50' : ''
+ 'rounded-xl border p-3 cursor-pointer transition-all duration-150',
+ activeAnnotationId === ann.id
+   ? 'border-primary-300 bg-primary-50/50 ring-1 ring-primary-200'
+   : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm',
+ ann.is_resolved ? 'opacity-70' : ''
  ]"
  @click="focusAnnotation(ann.id)"
  >
- <!-- Color dot + quoted text -->
- <div class="flex items-start gap-2 mb-2.5">
- <span
- class="w-2 h-2 rounded-full mt-1.5 shrink-0"
- :style="{ backgroundColor: getColorHex(ann.color) }"
- />
- <p class="text-[11px] text-gray-500 font-document line-clamp-2 italic leading-relaxed">"{{ ann.selected_text }}"</p>
+ <!-- Author + date -->
+ <div class="flex items-center gap-2">
+ <UserAvatar :name="formatUserName(ann.author)" size="xs" class="shrink-0" />
+ <div class="min-w-0 flex-1">
+   <p class="text-xs font-semibold text-gray-800 truncate leading-tight">{{ formatUserName(ann.author) || 'ผู้ใช้งาน' }}</p>
+   <p class="text-xs text-gray-400 mt-0.5">{{ formatDate(ann.createdAt) }}</p>
+ </div>
  </div>
 
- <!-- Author + date row -->
- <div class="flex items-center gap-1.5 mb-1.5 pl-4">
- <div class="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
- <PhUser class="w-3 h-3 text-gray-500" />
- </div>
- <span class="text-xs font-medium text-gray-700 flex-1 truncate">{{ ann.author?.name }}</span>
- <span class="text-[10px] text-gray-400 shrink-0">{{ formatDate(ann.createdAt) }}</span>
+ <!-- Quoted text — bg tinted by highlight colour -->
+ <div class="mt-2.5 rounded-lg px-2.5 py-1.5 border border-black/5"
+   :style="{ backgroundColor: getColorHex(ann.color) + '40' }">
+   <p class="text-xs text-gray-700 font-sarabun line-clamp-2 leading-relaxed">"{{ ann.selected_text }}"</p>
  </div>
 
  <!-- Comment text -->
- <p v-if="ann.comment" class="text-xs text-gray-700 leading-relaxed break-words whitespace-pre-wrap pl-4 mb-1.5">{{ ann.comment }}</p>
+ <p v-if="ann.comment" class="mt-2.5 text-xs text-gray-700 leading-relaxed break-words whitespace-pre-wrap">{{ ann.comment }}</p>
 
- <!-- Actions + resolved state -->
- <div class="flex items-center gap-2 pl-4 mt-2">
- <PhCheckCircle v-if="ann.is_resolved" class="w-3 h-3 text-emerald-500 shrink-0" />
+ <!-- Actions -->
+ <div class="flex items-center gap-2 mt-3">
  <button
  @click.stop="toggleResolve(ann)"
- :class="['text-[10px] font-medium transition-colors', ann.is_resolved ? 'text-gray-400 hover:text-gray-600' : 'text-primary-600 hover:text-primary-700']"
+ :class="[
+   'inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full transition-all duration-150',
+   ann.is_resolved
+     ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+ ]"
  >
- {{ ann.is_resolved ? 'เปิดใหม่' : 'แก้ไขแล้ว' }}
+ <PhCheckCircle v-if="ann.is_resolved" class="w-3.5 h-3.5 shrink-0" weight="fill" />
+ <PhCircle v-else class="w-3.5 h-3.5 shrink-0 text-gray-400" />
+ {{ ann.is_resolved ? 'แก้ไขเรียบร้อย' : 'ทำเครื่องหมายว่าแก้แล้ว' }}
  </button>
  <button
  v-if="canDeleteAnnotation(ann)"
  @click.stop="deleteModalId = ann.id"
- class="text-[10px] text-gray-400 hover:text-rose-500 transition-colors ml-auto"
+ class="ml-auto p-1.5 rounded-lg text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-all duration-150"
+ aria-label="ลบความเห็น"
  >
- ลบ
+ <PhTrash class="w-3.5 h-3.5" />
  </button>
  </div>
  </div>
@@ -321,15 +356,18 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import api from '@/services/api';
+import { documentService } from '@/services/documentService';
 import { formatThaiDateTime } from '@/utils/date';
 import { sanitizeHtml } from '@/utils/sanitize';
+import { formatUserName } from '@/utils/user';
 import {
  PhFile, PhDownloadSimple, PhX,
  PhWarning, PhChatCircle,
  PhChatCircleDots, PhInfo, PhCheckCircle, PhUser,
- PhArrowsClockwise, PhUsersThree, PhPrinter
+ PhArrowsClockwise, PhUsersThree, PhPrinter, PhTrash, PhCheck, PhCircle
 } from '@phosphor-icons/vue';
 import FileIcon from '@/components/common/FileIcon.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
  doc: { type: Object, required: true },
@@ -340,7 +378,7 @@ const props = defineProps({
  canApprove: { type: Boolean, default: false },
  focusAnnotationId: { type: Number, default: null },
 });
-const emit = defineEmits(['close', 'download', 'reject', 'approve']);
+const emit = defineEmits(['close', 'download', 'reject', 'approve', 'update']);
 
 const authStore = useAuthStore();
 
@@ -392,6 +430,7 @@ const deleteModalId = ref(null);
 const showResolved = ref(false);
 const selectionInfo = ref(null);
 const showCommentInput = ref(false);
+const showSidebar = ref(false); // mobile annotation drawer (always visible on md+)
 const newCommentText = ref('');
 const pendingColor = ref('yellow');
 const submitting = ref(false);
@@ -466,9 +505,7 @@ const loadPreview = async () => {
 // ── Load annotations ──
 const loadAnnotations = async () => {
  try {
- const { data } = await api.get('/curricula/annotations', {
- params: { document_id: props.doc.id, document_type: props.documentType }
- });
+ const { data } = await documentService.getAnnotations({ document_id: props.doc.id, document_type: props.documentType });
  annotations.value = data.data;
  rebuildHighlightedHtml();
  if (props.focusAnnotationId) {
@@ -507,6 +544,8 @@ const enhanceTableHeaders = (detached) => {
  
  if (hasColSpan && maxRowSpan > 1) {
  headerCount = maxRowSpan;
+ // ตาราง Curriculum Mapping (หัวข้อหลายชั้น) — บังคับคอลัมน์เท่ากันให้สมมาตร
+ table.classList.add('mapping-table');
  } else if (colCount > 5) {
  headerCount = 1;
  }
@@ -657,7 +696,7 @@ const quickHighlight = async (color) => {
  pendingColor.value = color;
  submitting.value = true;
  try {
- const { data } = await api.post('/curricula/annotations', {
+ const { data } = await documentService.createAnnotation({
  document_id: props.doc.id,
  document_type: props.documentType,
  selected_text: selectionInfo.value.text,
@@ -681,6 +720,7 @@ const quickHighlight = async (color) => {
 
 const openCommentInput = async () => {
  showCommentInput.value = true;
+ showSidebar.value = true; // mobile: reveal drawer so composer is visible
  await nextTick();
  commentInputRef.value?.focus();
 };
@@ -696,7 +736,7 @@ const submitComment = async () => {
  if (!selectionInfo.value || submitting.value) return;
  submitting.value = true;
  try {
- const { data } = await api.post('/curricula/annotations', {
+ const { data } = await documentService.createAnnotation({
  document_id: props.doc.id,
  document_type: props.documentType,
  selected_text: selectionInfo.value.text,
@@ -768,6 +808,7 @@ const drawFocusOverlays = (span) => {
 // ── Sidebar interactions ──
 const focusAnnotation = (id) => {
   activeAnnotationId.value = id;
+  showSidebar.value = true; // mobile: open drawer to reveal the focused comment card
 
   const span = docContentRef.value?.querySelector(`[data-annotation-id="${id}"]`);
   if (!span) {
@@ -778,27 +819,26 @@ const focusAnnotation = (id) => {
 
   span.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  // รอ scroll settle ก่อนวัด rect (smooth scroll ใช้เวลา ~300ms)
-  setTimeout(() => drawFocusOverlays(span), 320);
-
   sidebarRef.value?.querySelector(`[data-card-id="${id}"]`)
     ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 };
 
 const toggleResolve = async (ann) => {
  try {
- await api.patch(`/curricula/annotations/${ann.id}/resolve`);
+ await documentService.resolveAnnotation(ann.id);
  ann.is_resolved = !ann.is_resolved;
  rebuildHighlightedHtml();
+ emit('update');
  } catch { /* silent */ }
 };
 
 const deleteAnnotation = async (id) => {
  try {
- await api.delete(`/curricula/annotations/${id}`);
+ await documentService.deleteAnnotation(id);
  annotations.value = annotations.value.filter(a => a.id !== id);
  if (activeAnnotationId.value === id) activeAnnotationId.value = null;
  rebuildHighlightedHtml();
+ emit('update');
  } catch { /* silent */ } finally {
  deleteModalId.value = null;
  }
@@ -847,6 +887,15 @@ onUnmounted(() => {
  filter: brightness(0.92);
 }
 
+.selection-toolbar {
+ position: relative;
+ background: white;
+ border-radius: 9999px;
+ border: 1px solid #e5e7eb;
+ box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+ opacity: 1;
+}
+
 /* ── FIX #4: ป้องกันตาราง/เนื้อหาทะลุกรอบ และบีบตัวอักษร ────────────────────── */
 /* ตาราง Word ให้เลื่อนขอดูได้ (Horizontal Scroll) และไม่ตัดคำ */
 :deep(.prose table) {
@@ -866,6 +915,26 @@ onUnmounted(() => {
  height: auto !important;
 }
 
+/* ── ตาราง Curriculum Mapping — คอลัมน์เท่ากันให้สมมาตร (ไม่ตามความกว้างจาก Word) ── */
+:deep(.prose table.mapping-table) {
+ display: table;
+ table-layout: fixed;
+ width: 100% !important;
+}
+:deep(.prose table.mapping-table td),
+:deep(.prose table.mapping-table th) {
+ white-space: normal;       /* ให้หัวข้อกลุ่มยาว ๆ ตัดบรรทัดแทนการดันคอลัมน์ */
+ word-break: break-word;
+ overflow-wrap: anywhere;
+ text-align: center;
+}
+/* คอลัมน์แรก (รายวิชา) กว้างกว่า ที่เหลือเฉลี่ยเท่ากัน */
+:deep(.prose table.mapping-table th:first-child),
+:deep(.prose table.mapping-table td:first-child) {
+ width: 16%;
+ text-align: left;
+}
+
 :deep(.prose td),
 :deep(.prose th) {
  padding: 8px 12px;
@@ -873,7 +942,7 @@ onUnmounted(() => {
  border-right: 1px solid #e5e7eb;
 }
 
-/* ล็อกหัวตารางทุกแถวใน thead ให้อยู่กับที่ (รองรับหัวข้อตารางแบบ 2-3 บรรทัดของ มคอ.2) */
+/* ล็อกหัวตารางทุกแถวใน thead ให้อยู่กับที่ (รองรับหัวข้อตารางแบบ 2-3 บรรทัดของ ร่างหลักสูตร (มคอ.2)) */
 :deep(.prose thead) {
  position: sticky;
  top: 0;
@@ -896,4 +965,5 @@ onUnmounted(() => {
  box-shadow: none;
 }
 </style>
+
 

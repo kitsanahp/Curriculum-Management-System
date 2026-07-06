@@ -3,6 +3,9 @@ require('dotenv').config();
 const app = require('./src/app');
 const { sequelize } = require('./src/models');
 const { startReminderScheduler } = require('./src/services/reminderScheduler');
+const { seedRelatedSystems } = require('./seeders/relatedSystems');
+const { seedDegreeTitles } = require('./seeders/degreeTitles');
+const { seedMajors } = require('./seeders/majors');
 
 const PORT = process.env.PORT || 5000;
 
@@ -57,13 +60,43 @@ async function runMigrations() {
   `);
   if (academicRows[0].cnt === 0) {
     await sequelize.query(`
-      ALTER TABLE users 
+      ALTER TABLE users
       ADD COLUMN academic_position VARCHAR(100) NULL AFTER position;
     `);
     await sequelize.query(`
       UPDATE users SET academic_position = position, position = NULL WHERE role = 'faculty';
     `);
     console.log('[Migration] เพิ่ม academic_position ใน users สำเร็จ');
+  }
+
+  // เช็คว่า column token_version มีอยู่ใน users หรือยัง (JWT revocation)
+  const [tvRows] = await sequelize.query(`
+    SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = '${db}'
+      AND TABLE_NAME   = 'users'
+      AND COLUMN_NAME  = 'token_version'
+  `);
+  if (tvRows[0].cnt === 0) {
+    await sequelize.query(`
+      ALTER TABLE users
+      ADD COLUMN token_version INT NOT NULL DEFAULT 0 AFTER locked_until;
+    `);
+    console.log('[Migration] เพิ่ม token_version ใน users สำเร็จ');
+  }
+
+  // เช็คว่า column user_agent มีอยู่ใน audit_logs หรือยัง (forensic — รู้ว่าใช้อุปกรณ์/เบราว์เซอร์ใด)
+  const [uaRows] = await sequelize.query(`
+    SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = '${db}'
+      AND TABLE_NAME   = 'audit_logs'
+      AND COLUMN_NAME  = 'user_agent'
+  `);
+  if (uaRows[0].cnt === 0) {
+    await sequelize.query(`
+      ALTER TABLE audit_logs
+      ADD COLUMN user_agent VARCHAR(512) NULL AFTER ip_address;
+    `);
+    console.log('[Migration] เพิ่ม user_agent ใน audit_logs สำเร็จ');
   }
 }
 
@@ -79,6 +112,15 @@ async function startServer() {
     // sync schema — ห้ามใช้ alter:true เพราะทำลาย column ที่มีอยู่
     await sequelize.sync({ alter: false });
     console.log('[DB] Sync schema สำเร็จ');
+
+    // seed ลิงก์ "ระบบที่เกี่ยวข้อง" เริ่มต้น (idempotent — รันซ้ำปลอดภัย)
+    await seedRelatedSystems();
+
+    // seed ชื่อวุฒิเริ่มต้น (idempotent — seed เฉพาะตอนตารางว่าง)
+    await seedDegreeTitles();
+
+    // seed สาขาวิชาเริ่มต้นจากชุดเดิมใน frontend (idempotent — seed เฉพาะตอนตารางว่าง)
+    await seedMajors();
 
     startReminderScheduler();
 

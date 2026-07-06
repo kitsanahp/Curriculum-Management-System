@@ -18,7 +18,10 @@ const User = sequelize.define('User', {
   department_id: { type: DataTypes.INTEGER, allowNull: true },
   is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
   failed_login_count: { type: DataTypes.INTEGER, defaultValue: 0, allowNull: false },
-  locked_until: { type: DataTypes.DATE, allowNull: true }
+  locked_until: { type: DataTypes.DATE, allowNull: true },
+  // ใช้เพิกถอน JWT แบบ stateless: token ฝัง tv ไว้ — ถ้า tv ใน token ≠ ค่านี้ใน DB = token ตาย
+  // เพิ่มค่าเมื่อ logout / เปลี่ยนรหัส / reset → token เก่าทุกใบใช้ไม่ได้ทันที
+  token_version: { type: DataTypes.INTEGER, defaultValue: 0, allowNull: false }
 }, {
   tableName: 'users',
   indexes: [

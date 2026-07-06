@@ -1,41 +1,49 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import api from '@/services/api';
+import { curriculumService } from '@/services/curriculumService';
 import { invalidateDashboard } from '@/composables/useDashboard';
 
 export const useCurriculumStore = defineStore('curriculum', () => {
   const curricula = ref([]);
   const current = ref(null);
   const loading = ref(false);
+  const error = ref(null);
 
   async function fetchAll(params = {}) {
     loading.value = true;
+    error.value = null;
     try {
-      const { data } = await api.get('/curricula', { params });
+      const { data } = await curriculumService.getAll(params);
       curricula.value = data.data;
       return data.meta;
+    } catch (e) {
+      error.value = e;
+      throw e;
     } finally { loading.value = false; }
   }
 
   async function fetchById(id) {
     loading.value = true;
+    error.value = null;
     try {
-      const { data } = await api.get(`/curricula/${id}`);
+      const { data } = await curriculumService.getById(id);
       current.value = data.data;
       return data.data;
+    } catch (e) {
+      error.value = e;
+      throw e;
     } finally { loading.value = false; }
   }
 
   async function create(payload) {
-    const { data } = await api.post('/curricula', payload);
+    const { data } = await curriculumService.create(payload);
     curricula.value.unshift(data.data);
     return data.data;
   }
 
   async function update(id, payload) {
-    const { data } = await api.put(`/curricula/${id}`, payload);
+    const { data } = await curriculumService.update(id, payload);
     const updated = data.data;
-    // patch only the changed scalar fields so relations (department, team) are preserved
     const idx = curricula.value.findIndex((c) => c.id === id);
     if (idx !== -1) curricula.value[idx] = { ...curricula.value[idx], ...updated };
     if (current.value?.id === id) current.value = { ...current.value, ...updated };
@@ -43,46 +51,45 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   }
 
   async function submitByDepartment(id) {
-    await api.post(`/curricula/${id}/submit`);
+    await curriculumService.submit(id);
     await fetchById(id);
     invalidateDashboard();
   }
 
   async function rejectByAdmin(id, note, revisionDeadline) {
-    await api.post(`/curricula/${id}/reject`, { note, revision_deadline: revisionDeadline || null });
+    await curriculumService.reject(id, note, revisionDeadline);
     await fetchById(id);
     invalidateDashboard();
   }
 
   async function approveByAdmin(id) {
-    await api.post(`/curricula/${id}/approve`);
+    await curriculumService.approve(id);
     await fetchById(id);
     invalidateDashboard();
   }
 
   async function resubmitAfterRevision(id) {
-    await api.post(`/curricula/${id}/resubmit`);
+    await curriculumService.resubmit(id);
     await fetchById(id);
     invalidateDashboard();
   }
 
   async function approveRecheck(id) {
-    await api.post(`/curricula/${id}/approve-recheck`);
+    await curriculumService.approveRecheck(id);
     await fetchById(id);
     invalidateDashboard();
   }
 
   async function rejectRecheck(id, note, revisionDeadline) {
-    await api.post(`/curricula/${id}/reject-recheck`, { note, revision_deadline: revisionDeadline || null });
+    await curriculumService.rejectRecheck(id, note, revisionDeadline);
     await fetchById(id);
     invalidateDashboard();
   }
 
   async function updateTeam(id, team) {
-    const { data } = await api.put(`/curricula/${id}/team`, { team });
+    const { data } = await curriculumService.updateTeam(id, team);
     return data.data;
   }
 
-  return { curricula, current, loading, fetchAll, fetchById, create, update, updateTeam, submitByDepartment, rejectByAdmin, approveByAdmin, resubmitAfterRevision, approveRecheck, rejectRecheck };
+  return { curricula, current, loading, error, fetchAll, fetchById, create, update, updateTeam, submitByDepartment, rejectByAdmin, approveByAdmin, resubmitAfterRevision, approveRecheck, rejectRecheck };
 });
-

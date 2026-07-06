@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import api from '@/services/api';
+import { notificationService } from '@/services/notificationService';
 
 export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref([]);
@@ -8,27 +8,26 @@ export const useNotificationStore = defineStore('notification', () => {
 
   async function fetch() {
     try {
-      const { data } = await api.get('/users/notifications');
+      const { data } = await notificationService.getAll();
       notifications.value = data.data;
     } catch { /* background poll — silent fail */ }
   }
 
   async function markRead(id) {
-    await api.put(`/users/notifications/${id}/read`);
+    await notificationService.markRead(id);
     const n = notifications.value.find((n) => n.id === id);
     if (n) n.is_read = true;
   }
 
   async function markAllRead() {
-    await api.put('/users/notifications/read-all');
+    await notificationService.markAllRead();
     notifications.value.forEach((n) => (n.is_read = true));
   }
 
   async function clearAll() {
     notifications.value = [];
-    await api.delete('/users/notifications/clear-all');
+    await notificationService.clearAll();
   }
 
   return { notifications, unreadCount, fetch, markRead, markAllRead, clearAll };
 });
-

@@ -26,3 +26,7 @@ dist-ssr/
 .claude
 CLAUDE.md
 PRODUCT.md
+HANDOVER.md
+
+# Generated email previews (npm run email:preview)
+backend/email-previews/

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import api from '@/services/api';
+import { departmentService } from '@/services/departmentService';
 import { DEPARTMENT_ORDER } from '@/constants/departments';
 
 export const useDepartmentStore = defineStore('department', () => {
@@ -10,7 +10,7 @@ export const useDepartmentStore = defineStore('department', () => {
   async function fetchDepartments() {
     if (loaded.value) return;
     try {
-      const { data } = await api.get('/departments');
+      const { data } = await departmentService.getAll();
       const raw = data.data || [];
       departments.value = [
         ...DEPARTMENT_ORDER.map(name => raw.find(d => d.name === name)).filter(Boolean),

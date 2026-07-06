@@ -2,17 +2,20 @@ const path = require('path');
 const fs = require('fs');
 const mammoth = require('mammoth');
 const cheerio = require('cheerio');
-const HtmlDiff = require('htmldiff-js').default;
+const { diffHtmlThaiAware } = require('../utils/htmlDiffThai');
 const { sequelize, TQF2Document, Curriculum, AuditLog } = require('../models');
 const { ROLES, CURRICULUM_STATUS } = require('../config/constants');
 const { normalizeSymbols } = require('../services/tqf2SymbolNormalizer');
 const { preprocessDocx, preprocessDocxFile } = require('../services/docxPreprocessor');
 const { convertPdfToHtml, convertPdfBufferToHtml } = require('../middlewares/pdfConverterMiddleware');
-const tqf2Cache = require('../cache/tqf2Cache');
+const tqf2Cache = require('../utils/tqf2Cache');
+const { canAccessCurriculum } = require('../utils/curriculumAccess');
+const { getServiceUnitDeptId, registrarCanAccess } = require('../utils/registrarAccess');
 
-// ── HTML cleaner: ตัด noise จาก Word ก่อนส่ง htmldiff-js ─────────────────────
-// mammoth สร้าง class/style ตาม Word formatting — htmldiff-js นับ attribute ที่
-// ต่างกันเป็น "เปลี่ยนแปลง" ทั้งที่เนื้อหาเหมือนกัน ฟังก์ชันนี้ตัดทิ้งทั้งหมด
+// ── HTML cleaner: ตัด noise จาก Word ก่อนส่งเข้า diff ─────────────────────────
+// mammoth สร้าง class/style ตาม Word formatting — diff จับแท็ก (พร้อม attribute)
+// เป็น token เดียว ถ้า attribute ต่างกันจะถูกนับเป็น "เปลี่ยนแปลง" ทั้งที่เนื้อหา
+// เหมือนกัน ฟังก์ชันนี้ตัด style/class/id และเปลือก span เปล่าทิ้งทั้งหมด
 
 function cleanHtmlBeforeDiff(html) {
   // ก่อนอื่น normalize symbols จาก Wingdings/Symbol/Private Use Area
@@ -22,6 +25,20 @@ function cleanHtmlBeforeDiff(html) {
 
   // ลบ style, class, id ออกจากทุก element
   $('*').removeAttr('style').removeAttr('class').removeAttr('id');
+
+  // ── Server-side sanitize (defense-in-depth — frontend ยัง DOMPurify ซ้ำ) ──
+  // ตัดแท็กที่รันสคริปต์/ฝังเนื้อหานอกได้ + event handler + javascript: URL
+  // คง data: URI ของ <img> ไว้ (mammoth ฝังรูปเป็น base64) เพื่อไม่ให้รูปหาย
+  $('script, style, iframe, object, embed, form, link, meta, base, noscript').remove();
+  $('*').each((_, el) => {
+    for (const name of Object.keys(el.attribs || {})) {
+      if (/^on/i.test(name)) { $(el).removeAttr(name); continue; }
+      if ((name === 'href' || name === 'src' || name === 'xlink:href') &&
+          /^\s*(javascript|vbscript):/i.test(el.attribs[name] || '')) {
+        $(el).removeAttr(name);
+      }
+    }
+  });
 
   // ถอด <span> ที่ไม่มี attribute เหลือ (เปลือกขยะจาก Word)
   // ทำหลายรอบเพราะ span ซ้อน span ได้
@@ -108,91 +125,6 @@ function parseSectionsHtml(html, cheerio) {
   return result;
 }
 
-// ── Text diff helpers ─────────────────────────────────────────────────────────
-
-function tokenize(text) {
-  return text.match(/\S+|\s+/g) || [];
-}
-
-function wordDiff(textA, textB) {
-  const tokA = tokenize(textA);
-  const tokB = tokenize(textB);
-  const m = tokA.length, n = tokB.length;
-
-  // Guard against O(m*n) blowup on very large sections
-  if (m * n > 4000000) {
-    return textA === textB
-      ? [{ type: 'equal', value: textA }]
-      : [{ type: 'delete', value: textA }, { type: 'insert', value: textB }];
-  }
-
-  // LCS table (backward indices)
-  const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));
-  for (let i = m - 1; i >= 0; i--) {
-    for (let j = n - 1; j >= 0; j--) {
-      dp[i][j] = tokA[i] === tokB[j]
-        ? dp[i + 1][j + 1] + 1
-        : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    }
-  }
-
-  // Backtrack + collapse consecutive same-type tokens into one entry
-  const ops = [];
-  let i = 0, j = 0;
-  const push = (type, value) => {
-    if (ops.length && ops[ops.length - 1].type === type) ops[ops.length - 1].value += value;
-    else ops.push({ type, value });
-  };
-  while (i < m || j < n) {
-    if (i < m && j < n && tokA[i] === tokB[j]) {
-      push('equal', tokA[i]); i++; j++;
-    } else if (j < n && (i >= m || dp[i][j + 1] >= dp[i + 1][j])) {
-      push('insert', tokB[j]); j++;
-    } else {
-      push('delete', tokA[i]); i++;
-    }
-  }
-  return ops;
-}
-
-function splitIntoSections(text) {
-  // Require หมวดที่ at the START of the line to avoid matching inline cross-references
-  const SECTION_RE = /^\s*หมวดที่\s*([1-8๑-๘])/;
-  const THAI_NUM = { '๑': 1, '๒': 2, '๓': 3, '๔': 4, '๕': 5, '๖': 6, '๗': 7, '๘': 8 };
-  const lines = text.split('\n');
-
-  const occurrences = {};
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(SECTION_RE);
-    if (m) {
-      const raw = m[1];
-      const num = THAI_NUM[raw] ?? parseInt(raw);
-      if (!occurrences[num]) occurrences[num] = [];
-      occurrences[num].push({ lineIdx: i, title: lines[i].trim() });
-    }
-  }
-
-  if (!Object.keys(occurrences).length) {
-    return [{ number: 0, title: 'เนื้อหาเอกสาร', content: text.trim() }];
-  }
-
-  // Use the LAST occurrence of each number — body header, not table of contents
-  const anchors = Object.entries(occurrences)
-    .map(([num, list]) => ({
-      num: parseInt(num),
-      lineIdx: list[list.length - 1].lineIdx,
-      // strip trailing page number digits (from TOC lines like "หมวดที่ 1 ข้อมูลทั่วไป 1")
-      title: list[list.length - 1].title.replace(/\s+\d+\s*$/, ''),
-    }))
-    .sort((a, b) => a.lineIdx - b.lineIdx);
-
-  return anchors.map((anchor, idx) => {
-    const nextLineIdx = anchors[idx + 1]?.lineIdx ?? lines.length;
-    const content = lines.slice(anchor.lineIdx + 1, nextLineIdx).join('\n').trim();
-    return { number: anchor.num, title: anchor.title, content };
-  });
-}
-
 exports.getAll = async (req, res, next) => {
   try {
     const { curriculum_id } = req.params;
@@ -201,8 +133,11 @@ exports.getAll = async (req, res, next) => {
     const curriculum = await Curriculum.findByPk(curriculum_id);
     if (!curriculum) return res.status(404).json({ success: false, message: 'ไม่พบหลักสูตร' });
 
-    if ((req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) && curriculum.department_id !== req.user.department_id) {
-      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
+    if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+      const allowed = await canAccessCurriculum(req.user, {
+        departmentId: curriculum.department_id, curriculumId: curriculum.id,
+      });
+      if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
     }
 
     const where = { curriculum_id, is_deleted: false };
@@ -210,7 +145,7 @@ exports.getAll = async (req, res, next) => {
 
     const docs = await TQF2Document.findAll({
       where,
-      include: [{ association: 'uploader', attributes: ['id', 'name', 'role'] }],
+      include: [{ association: 'uploader', attributes: ['id', 'name', 'role', 'academic_position'] }],
       order: [['version_number', 'DESC']],
     });
 
@@ -235,13 +170,17 @@ exports.upload = async (req, res, next) => {
 
     const { curriculum_id } = req.params;
 
-    const curriculum = await Curriculum.findByPk(curriculum_id, { attributes: ['id', 'status'] });
+    const curriculum = await Curriculum.findByPk(curriculum_id, { attributes: ['id', 'status', 'department_id'] });
     if (!curriculum) return res.status(404).json({ success: false, message: 'ไม่พบหลักสูตร' });
 
     const FACULTY_UPLOADABLE = [CURRICULUM_STATUS.PENDING_DEPARTMENT, CURRICULUM_STATUS.REVISION];
     const ADMIN_UPLOADABLE   = [CURRICULUM_STATUS.DEPARTMENT_SUBMITTED, CURRICULUM_STATUS.UNDER_COMMITTEE, CURRICULUM_STATUS.PENDING_ADMIN_RECHECK];
 
     if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+      const allowed = await canAccessCurriculum(req.user, {
+        departmentId: curriculum.department_id, curriculumId: curriculum.id,
+      });
+      if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
       if (!FACULTY_UPLOADABLE.includes(curriculum.status)) {
         return res.status(403).json({ success: false, message: 'ไม่สามารถอัปโหลดได้ในขณะนี้ กรุณารอให้เจ้าหน้าที่ดำเนินการก่อน' });
       }
@@ -327,11 +266,15 @@ exports.download = async (req, res, next) => {
     }
     if (req.user.role === ROLES.REGISTRAR || req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
       const curriculum = await Curriculum.findByPk(doc.curriculum_id, { attributes: ['degree_level', 'department_id'] });
-      if (req.user.role === ROLES.REGISTRAR && curriculum?.degree_level !== 'bachelor') {
-        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ (สิทธิ์นายทะเบียนเห็นเฉพาะ ป.ตรี)' });
+      if (req.user.role === ROLES.REGISTRAR
+          && !registrarCanAccess(curriculum, await getServiceUnitDeptId())) {
+        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงหลักสูตรนี้' });
       }
-      if ((req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) && curriculum?.department_id !== req.user.department_id) {
-        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
+      if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+        const allowed = await canAccessCurriculum(req.user, {
+          departmentId: curriculum?.department_id, curriculumId: doc.curriculum_id,
+        });
+        if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
       }
     }
 
@@ -356,11 +299,15 @@ exports.preview = async (req, res, next) => {
     }
     if (req.user.role === ROLES.REGISTRAR || req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
       const curriculum = await Curriculum.findByPk(doc.curriculum_id, { attributes: ['degree_level', 'department_id'] });
-      if (req.user.role === ROLES.REGISTRAR && curriculum?.degree_level !== 'bachelor') {
-        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ (สิทธิ์นายทะเบียนเห็นเฉพาะ ป.ตรี)' });
+      if (req.user.role === ROLES.REGISTRAR
+          && !registrarCanAccess(curriculum, await getServiceUnitDeptId())) {
+        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงหลักสูตรนี้' });
       }
-      if ((req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) && curriculum?.department_id !== req.user.department_id) {
-        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
+      if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+        const allowed = await canAccessCurriculum(req.user, {
+          departmentId: curriculum?.department_id, curriculumId: doc.curriculum_id,
+        });
+        if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
       }
     }
 
@@ -389,11 +336,16 @@ exports.compare = async (req, res, next) => {
     }
 
     const [docA, docB] = await Promise.all([
-      TQF2Document.findByPk(id_a, { include: [{ association: 'uploader', attributes: ['id', 'name', 'role'] }] }),
-      TQF2Document.findByPk(id_b, { include: [{ association: 'uploader', attributes: ['id', 'name', 'role'] }] }),
+      TQF2Document.findByPk(id_a, { include: [{ association: 'uploader', attributes: ['id', 'name', 'role', 'academic_position'] }] }),
+      TQF2Document.findByPk(id_b, { include: [{ association: 'uploader', attributes: ['id', 'name', 'role', 'academic_position'] }] }),
     ]);
     if (!docA || !docB || docA.is_deleted || docB.is_deleted) {
       return res.status(404).json({ success: false, message: 'ไม่พบเอกสาร' });
+    }
+
+    // เทียบได้เฉพาะเวอร์ชันภายในหลักสูตรเดียวกัน (UI ก็ไม่เปิดให้ข้าม)
+    if (docA.curriculum_id !== docB.curriculum_id) {
+      return res.status(400).json({ success: false, message: 'เปรียบเทียบได้เฉพาะเอกสารในหลักสูตรเดียวกัน' });
     }
 
     if (req.user.role === ROLES.EXECUTIVE) {
@@ -406,18 +358,29 @@ exports.compare = async (req, res, next) => {
     ]);
 
     if (req.user.role === ROLES.REGISTRAR) {
-      if (currA?.degree_level !== 'bachelor' || currB?.degree_level !== 'bachelor') {
-        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ (สิทธิ์นายทะเบียนเห็นเฉพาะ ป.ตรี)' });
+      const serviceUnitId = await getServiceUnitDeptId();
+      if (!registrarCanAccess(currA, serviceUnitId) || !registrarCanAccess(currB, serviceUnitId)) {
+        return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงหลักสูตรนี้' });
       }
     }
 
     if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
-      if (
-        currA?.department_id !== req.user.department_id ||
-        currB?.department_id !== req.user.department_id
-      ) {
+      const [okA, okB] = await Promise.all([
+        canAccessCurriculum(req.user, { departmentId: currA?.department_id, curriculumId: docA.curriculum_id }),
+        canAccessCurriculum(req.user, { departmentId: currB?.department_id, curriculumId: docB.curriculum_id }),
+      ]);
+      if (!okA || !okB) {
         return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เปรียบเทียบเอกสารนี้' });
       }
+    }
+
+    // ── จำกัดให้เทียบเฉพาะ DOCX vs DOCX ───────────────────────────────────────
+    // PDF แปลงได้แค่ plain text (เสียตาราง/รูปแบบ) ทำให้ผล diff ไม่แม่น จึงรองรับเฉพาะ DOCX
+    if (docA.file_type !== 'docx' || docB.file_type !== 'docx') {
+      return res.status(422).json({
+        success: false,
+        message: 'การเปรียบเทียบรองรับเฉพาะไฟล์ DOCX เท่านั้น กรุณาเลือกเวอร์ชันที่เป็นไฟล์ DOCX ทั้งสองฝั่ง',
+      });
     }
 
     // ── Level 2: diff cache hit → คืนผลทันทีโดยไม่ต้องแตะ file ────────────────
@@ -479,7 +442,7 @@ exports.compare = async (req, res, next) => {
       const newHtml = sB?.html ?? '';
       const title = (sB ?? sA).title;
 
-      const diffHtml = HtmlDiff.execute(oldHtml, newHtml);
+      const diffHtml = diffHtmlThaiAware(oldHtml, newHtml);
 
       const $d = cheerio.load(diffHtml, { decodeEntities: false });
       const insLen = $d('ins').text().trim().length;
@@ -509,6 +472,15 @@ exports.compareUpload = async (req, res, next) => {
   try {
     if (!req.files?.oldDoc?.[0] || !req.files?.newDoc?.[0]) {
       return res.status(400).json({ success: false, message: 'กรุณาอัปโหลดไฟล์ทั้งสองเวอร์ชัน (oldDoc, newDoc)' });
+    }
+
+    // จำกัดให้เทียบเฉพาะ DOCX เท่านั้น (ไม่รับ PDF — แปลงแล้ว diff ไม่แม่น)
+    const isDocx = (f) => path.extname(f.originalname).toLowerCase() === '.docx';
+    if (!isDocx(req.files.oldDoc[0]) || !isDocx(req.files.newDoc[0])) {
+      return res.status(422).json({
+        success: false,
+        message: 'การเปรียบเทียบรองรับเฉพาะไฟล์ DOCX เท่านั้น กรุณาอัปโหลดไฟล์ DOCX ทั้งสองไฟล์',
+      });
     }
 
     const extractBufferHtml = async (file) => {
@@ -550,7 +522,7 @@ exports.compareUpload = async (req, res, next) => {
       const oldSectionHtml = sA?.html ?? '';
       const newSectionHtml = sB?.html ?? '';
       const sectionName = (sB ?? sA).title;
-      const diffHtml = HtmlDiff.execute(oldSectionHtml, newSectionHtml);
+      const diffHtml = diffHtmlThaiAware(oldSectionHtml, newSectionHtml);
 
       const $d = cheerio.load(diffHtml, { decodeEntities: false });
       const insLen = $d('ins').text().trim().length;
@@ -574,8 +546,11 @@ exports.deleteDoc = async (req, res, next) => {
     });
     if (!doc) return res.status(404).json({ success: false, message: 'ไม่พบไฟล์' });
 
-    if ((req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) && doc.curriculum?.department_id !== req.user.department_id) {
-      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ลบไฟล์นี้' });
+    if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
+      const allowed = await canAccessCurriculum(req.user, {
+        departmentId: doc.curriculum?.department_id, curriculumId: doc.curriculum_id,
+      });
+      if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ลบไฟล์นี้' });
     }
 
     doc.is_deleted = true;

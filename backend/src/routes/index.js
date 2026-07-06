@@ -9,6 +9,8 @@ router.get('/dashboard/summary', authenticate, dashboardCtrl.getSummary);
 router.use('/auth',           require('./authRoutes'));        // login, register, getMe
 router.use('/users',          require('./userRoutes'));        // จัดการผู้ใช้ + notification
 router.use('/departments',    require('./departmentRoutes')); // ข้อมูลภาควิชา/สาขา
+router.use('/degree-titles',  require('./degreeTitleRoutes')); // ชื่อวุฒิ/ชื่อปริญญา (master data)
+router.use('/majors',         require('./majorRoutes'));       // สาขาวิชาในภาควิชา (master data)
 router.use('/curricula',      require('./curriculumRoutes')); // หลักสูตร + เอกสาร + committee + TQF2
 router.use('/announcements',  require('./announcementRoutes')); // ประกาศแจ้งเวียน
 router.use('/resources',      require('./resourceRoutes'));   // แบบฟอร์มและเอกสารดาวน์โหลด

@@ -7,7 +7,8 @@ const AuditLog = sequelize.define('AuditLog', {
   user_id: { type: DataTypes.INTEGER, allowNull: false },
   action: { type: DataTypes.STRING(255), allowNull: false },
   details: { type: DataTypes.JSON, allowNull: true },
-  ip_address: { type: DataTypes.STRING(50), allowNull: true }
+  ip_address: { type: DataTypes.STRING(50), allowNull: true },
+  user_agent: { type: DataTypes.STRING(512), allowNull: true }
 }, {
   tableName: 'audit_logs',
   timestamps: true,

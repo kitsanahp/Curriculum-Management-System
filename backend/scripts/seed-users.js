@@ -1,13 +1,13 @@
 /**
  * seed-users.js
- * ลบ users ทั้งหมดแล้วสร้าง mock users สำหรับ testing ทุก role
+ * ลบ users ทั้งหมด แล้วสร้าง mock user บทบาทละ 1 คน สำหรับทดสอบ
+ * (เก็บประกาศ/แบบฟอร์มไว้ — reassign เจ้าของไป admin ใหม่ กัน orphan)
  * Usage: node scripts/seed-users.js
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const sequelize = require('../src/config/database');
-const User       = require('../src/models/User');
-const Department = require('../src/models/Department');
+const { User, Department, Announcement, Resource } = require('../src/models');
 
 // ─── ภาควิชาทั้งหมดในคณะ ────────────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -16,146 +16,57 @@ const DEPARTMENTS = [
   { name: 'ภาควิชาชีววิทยา',                                       code: 'BIO'  },
   { name: 'ภาควิชาฟิสิกส์',                                       code: 'PHYS' },
   { name: 'ภาควิชาวิทยาการคอมพิวเตอร์และเทคโนโลยีสารสนเทศ',       code: 'CSIT' },
+  { name: 'งานบริการการศึกษา',                                    code: 'EDU'  },
 ];
 
-// ─── Mock users — password ทุกคน: password123 ───────────────────────────────
+// ─── Mock users — บทบาทละ 1 คน — password ทุกคน: password123 ────────────────
+// หมายเหตุเรื่อง field ตำแหน่ง (สำคัญ):
+//   - faculty → ใช้ academic_position (ตำแหน่งวิชาการ), position = null
+//   - role อื่น → ใช้ position (ตำแหน่งงาน/บริหาร), academic_position = null
 const MOCK_USERS = [
-  // ── Admin (นักวิชาการศึกษาคณะ) ──────────────────────────────────
   {
-    name:        'บียอนเซ่ โนลส์',
-    position:    'นักวิชาการศึกษา',
-    email:       'admin@sci.nu.ac.th',
-    password:    'password123',
-    role:        'admin',
-    dept_code:   null,
-    is_active:   true,
-  },
-
-  // ── Faculty (อาจารย์ผู้รับผิดชอบหลักสูตร) — หนึ่งต่อภาควิชา ─────
-  {
-    name:        'ผศ.ดร. อลิเชีย คุก',             // Alicia Keys
-    position:    'ผู้ช่วยศาสตราจารย์',
-    email:       'faculty.math@sci.nu.ac.th',
-    password:    'password123',
-    role:        'faculty',
-    dept_code:   'MATH',
-    is_active:   true,
+    name:              'นางสาวแอดมิน ทดสอบ',
+    position:          'นักวิชาการศึกษา',
+    academic_position: null,
+    email:             'admin@sci.nu.ac.th',
+    role:              'admin',
+    dept_code:         null,
   },
   {
-    name:        'รศ.ดร. มาไรอาห์ คาเรย์',          // Mariah Carey
-    position:    'รองศาสตราจารย์',
-    email:       'faculty.chem@sci.nu.ac.th',
-    password:    'password123',
-    role:        'faculty',
-    dept_code:   'CHEM',
-    is_active:   true,
+    name:              'ดร. อาจารย์ ทดสอบ',          // formatUserName จะเติมยศ → "รศ.ดร. อาจารย์ ทดสอบ"
+    position:          null,
+    academic_position: 'รองศาสตราจารย์',
+    email:             'faculty@sci.nu.ac.th',
+    role:              'faculty',
+    dept_code:         'MATH',
   },
   {
-    name:        'อ.ดร. โอลิเวีย โรดริโก',          // Olivia Rodrigo
-    position:    'อาจารย์',
-    email:       'faculty.bio@sci.nu.ac.th',
-    password:    'password123',
-    role:        'faculty',
-    dept_code:   'BIO',
-    is_active:   true,
+    name:              'นายเจ้าหน้าที่ ทดสอบ',
+    position:          'เจ้าหน้าที่บริหารงานทั่วไป',
+    academic_position: null,
+    email:             'staff@sci.nu.ac.th',
+    role:              'staff',
+    dept_code:         'MATH',
   },
   {
-    name:        'ผศ.ดร. บริทนีย์ สเปียร์ส',
-    position:    'ผู้ช่วยศาสตราจารย์',
-    email:       'faculty.phys@sci.nu.ac.th',
-    password:    'password123',
-    role:        'faculty',
-    dept_code:   'PHYS',
-    is_active:   true,
+    name:              'นางนายทะเบียน ทดสอบ',
+    position:          'นักวิชาการศึกษา',
+    academic_position: null,
+    email:             'registrar@nu.ac.th',
+    role:              'registrar',
+    dept_code:         null,
   },
   {
-    name:        'อ.ดร. สเตฟานี เจอร์มาโนตตา',   // Lady Gaga
-    position:    'อาจารย์',
-    email:       'faculty.csit@sci.nu.ac.th',
-    password:    'password123',
-    role:        'faculty',
-    dept_code:   'CSIT',
-    is_active:   true,
-  },
-
-  // ── Staff (เจ้าหน้าที่สาขา) — หนึ่งต่อภาควิชา ───────────────────
-  {
-    name:        'โรบิน เฟนตี้',                 // Rihanna
-    position:    'เจ้าหน้าที่บริหารงานทั่วไป',
-    email:       'staff.math@sci.nu.ac.th',
-    password:    'password123',
-    role:        'staff',
-    dept_code:   'MATH',
-    is_active:   true,
-  },
-  {
-    name:        'แคทเธอริน ฮัดสัน',             // Katy Perry
-    position:    'เจ้าหน้าที่บริหารงานทั่วไป',
-    email:       'staff.chem@sci.nu.ac.th',
-    password:    'password123',
-    role:        'staff',
-    dept_code:   'CHEM',
-    is_active:   true,
-  },
-  {
-    name:        'เมลิสซา เจฟเฟอร์สัน',             // Lizzo
-    position:    'เจ้าหน้าที่บริหารงานทั่วไป',
-    email:       'staff.bio@sci.nu.ac.th',
-    password:    'password123',
-    role:        'staff',
-    dept_code:   'BIO',
-    is_active:   true,
-  },
-  {
-    name:        'เทย์เลอร์ สวิฟต์',
-    position:    'เจ้าหน้าที่บริหารงานทั่วไป',
-    email:       'staff.phys@sci.nu.ac.th',
-    password:    'password123',
-    role:        'staff',
-    dept_code:   'PHYS',
-    is_active:   true,
-  },
-  {
-    name:        'อาริอานา กรานเด',
-    position:    'เจ้าหน้าที่บริหารงานทั่วไป',
-    email:       'staff.csit@sci.nu.ac.th',
-    password:    'password123',
-    role:        'staff',
-    dept_code:   'CSIT',
-    is_active:   true,
-  },
-
-  // ── Registrar (เจ้าหน้าที่กองบริการการศึกษา) ──────────────────────
-  {
-    name:        'เมแกน เทรนเนอร์',                // Meghan Trainor
-    position:    'นักวิชาการศึกษา',
-    email:       'registrar@nu.ac.th',
-    password:    'password123',
-    role:        'registrar',
-    dept_code:   null,
-    is_active:   true,
-  },
-
-  // ── Executive (ผู้บริหารคณะ) ─────────────────────────────────────
-  {
-    name:        'ศ.ดร. ซาบรีนา คาร์เพนเตอร์',
-    position:    'คณบดีคณะวิทยาศาสตร์',
-    email:       'dean@sci.nu.ac.th',
-    password:    'password123',
-    role:        'executive',
-    dept_code:   null,
-    is_active:   true,
-  },
-  {
-    name:        'รศ.ดร. โอนิกา มาราช',           // Nicki Minaj
-    position:    'รองคณบดีฝ่ายวิชาการ',
-    email:       'vdean@sci.nu.ac.th',
-    password:    'password123',
-    role:        'executive',
-    dept_code:   null,
-    is_active:   true,
+    name:              'ศ.ดร. ผู้บริหาร ทดสอบ',
+    position:          'คณบดีคณะวิทยาศาสตร์',
+    academic_position: null,
+    email:             'executive@sci.nu.ac.th',
+    role:              'executive',
+    dept_code:         null,
   },
 ];
+
+const PASSWORD = 'password123';
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 async function seed() {
@@ -165,9 +76,9 @@ async function seed() {
 
     // 1. ลบ users ทั้งหมด (ปิด FK check ชั่วคราว)
     await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
-    const deleted = await User.destroy({ where: {}, truncate: true });
+    await User.destroy({ where: {}, truncate: true, force: true });
     await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
-    console.log(`✓ ลบ users เดิมทั้งหมดแล้ว (${deleted} รายการ)`);
+    console.log('✓ ลบ users เดิมทั้งหมดแล้ว');
 
     // 2. สร้าง / ตรวจสอบ departments
     console.log('\n── สร้างภาควิชา ──────────────────────────');
@@ -181,33 +92,37 @@ async function seed() {
       console.log(`  ✓ ${d.name} (id: ${dept.id})`);
     }
 
-    // 3. สร้าง mock users
-    console.log('\n── สร้าง mock users ──────────────────────');
+    // 3. สร้าง mock users (password ผ่าน hook hash ของ model)
+    console.log('\n── สร้าง mock users (บทบาทละ 1 คน) ───────');
+    let adminId = null;
     for (const u of MOCK_USERS) {
       const user = await User.create({
-        name:        u.name,
-        position:    u.position,
-        email:       u.email,
-        password:    u.password,
-        role:        u.role,
-        department_id: u.dept_code ? deptMap[u.dept_code] : null,
-        is_active:   u.is_active,
+        name:              u.name,
+        position:          u.position,
+        academic_position: u.academic_position,
+        email:             u.email,
+        password:          PASSWORD,
+        role:              u.role,
+        department_id:     u.dept_code ? deptMap[u.dept_code] : null,
+        is_active:         true,
       });
+      if (u.role === 'admin') adminId = user.id;
       console.log(`  ✓ [${u.role.padEnd(10)}] ${u.name} — ${u.email}`);
     }
 
-    // 4. สรุป
+    // 4. reassign เจ้าของประกาศ/แบบฟอร์มไป admin ใหม่ (เจ้าของเดิมถูกลบ)
+    if (adminId) {
+      const [annCount] = [await Announcement.update({ created_by: adminId }, { where: {} })];
+      const [resCount] = [await Resource.update({ created_by: adminId }, { where: {} })];
+      console.log(`\n✓ reassign เจ้าของ ประกาศ(${annCount[0]}) + แบบฟอร์ม(${resCount[0]}) → admin ใหม่`);
+    }
+
+    // 5. สรุป
     console.log('\n══════════════════════════════════════════════');
     console.log('  seed เสร็จสิ้น — ข้อมูล login สำหรับทดสอบ');
     console.log('══════════════════════════════════════════════');
-    console.log('  password ทุกคน: password123\n');
-
-    const groups = ['admin', 'faculty', 'staff', 'registrar', 'executive'];
-    for (const role of groups) {
-      const users = MOCK_USERS.filter(u => u.role === role);
-      console.log(`  ${role.toUpperCase()}`);
-      users.forEach(u => console.log(`    ${u.email}`));
-    }
+    console.log(`  password ทุกคน: ${PASSWORD}\n`);
+    MOCK_USERS.forEach(u => console.log(`  ${u.role.toUpperCase().padEnd(10)} ${u.email}`));
     console.log('');
 
   } catch (err) {

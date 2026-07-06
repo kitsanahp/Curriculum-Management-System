@@ -1,20 +1,11 @@
 <template>
   <span :class="[
-    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border select-none transition-all duration-150 ease-ios',
+    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border select-none transition-all duration-150 ease-ios',
     info.wrapClass,
     $attrs.class
   ]">
-    <!-- ไอคอนสถานะ "รอ" ให้ pulse ช้าๆ เพื่อบอกว่ากำลังรอ action -->
-    <component
-      :is="info.icon"
-      :class="[
-        'w-3.5 h-3.5 shrink-0 opacity-70',
-        info.pulseIcon && 'animate-pulse-slow'
-      ]"
-    />
+    <component :is="info.icon" class="w-3.5 h-3.5 shrink-0 opacity-70" />
     {{ info.label }}
-    <!-- dot บอก "กำลังดำเนินการอยู่" สำหรับ under_committee -->
-    <span v-if="info.activeDot" class="w-1.5 h-1.5 rounded-full bg-current animate-pulse-slow opacity-80 shrink-0" />
   </span>
 </template>
 
@@ -40,12 +31,13 @@ const currentStep = computed(() => {
   return c.committee_steps.find(s => s.id === c.current_committee_step_id) ?? null;
 });
 
-const totalSteps = computed(() => props.curriculum?.committee_steps?.length ?? 0);
+// +1 = ขั้น "งานหลักสูตร คณะวิทยาศาสตร์" (ขั้นที่ 1) ที่นำหน้าคณะกรรมการทั้งหมด
+const totalSteps = computed(() => (props.curriculum?.committee_steps?.length ?? 0) + 1);
 
 const info = computed(() => {
   const s    = props.status;
   const step = currentStep.value;
-  const n    = step?.step_order;
+  const n    = step ? step.step_order + 1 : null;  // committee step_order +1 (งานหลักสูตร = ขั้น 1)
   const tot  = totalSteps.value;
   const name = step ? (COMMITTEE_LABELS[step.committee_type] ?? step.committee_type) : '';
 

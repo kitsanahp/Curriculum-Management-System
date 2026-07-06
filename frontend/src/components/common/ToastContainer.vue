@@ -14,7 +14,7 @@
           ]">
           <!-- Icon -->
           <div :class="['w-7 h-7 rounded-full flex items-center justify-center shrink-0', TOAST_STYLES[toast.type].icon]">
-            <component :is="TOAST_STYLES[toast.type].iconComponent" class="w-3.5 h-3.5" />
+            <component :is="toast.icon || TOAST_STYLES[toast.type].iconComponent" class="w-3.5 h-3.5" />
           </div>
 
           <!-- Text -->

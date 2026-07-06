@@ -2,7 +2,7 @@
 const ROLES = {
   ADMIN:     'admin',      // เจ้าหน้าที่หลักสูตรคณะ
   FACULTY:   'faculty',   // อาจารย์ผู้รับผิดชอบหลักสูตร
-  STAFF:     'staff',     // เจ้าหน้าที่ภาควิชา
+  STAFF:     'staff',     // เจ้าหน้าที่สาขาวิชา
   REGISTRAR: 'registrar', // เจ้าหน้าที่กองบริการการศึกษา
   EXECUTIVE: 'executive'  // ผู้บริหารคณะ (view-only)
 };

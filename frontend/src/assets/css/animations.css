@@ -114,11 +114,6 @@
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
 }
-.dark .animate-shimmer {
-  background: linear-gradient(90deg, #1e2640 25%, #263050 50%, #1e2640 75%);
-  background-size: 200% 100%;
-}
-
 /* Shake — ใส่ class แล้วลบออกหลัง 400ms เพื่อ retrigger */
 .animate-shake { animation: shake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
 
@@ -146,10 +141,6 @@
   transform: translateY(-3px);
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.10), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
 }
-.dark .hover-lift:hover {
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45), 0 2px 8px -2px rgba(0, 0, 0, 0.30);
-}
-
 /* ── Stagger delays (ใช้คู่กับ animate-list-item หรือ animate-card-in) ──── */
 
 .stagger-1 { animation-delay: 0.05s; }

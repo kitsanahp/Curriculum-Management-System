@@ -13,10 +13,10 @@ const authenticate = async (req, res, next) => {
   } else if (authHeader && authHeader.startsWith('Bearer ')) {
     // Bearer header — fallback สำหรับ API client / mobile
     token = authHeader.split(' ')[1];
-  } else if (req.query.token) {
-    // query token — fallback สำหรับ static file download ผ่าน URL
-    token = req.query.token;
   }
+  // หมายเหตุ: เลิกรับ token ผ่าน ?token= ใน query string แล้ว
+  // เพราะ JWT จะรั่วเข้า access log / browser history / Referer header
+  // การดาวน์โหลดไฟล์ใช้ httpOnly cookie (ส่งอัตโนมัติแบบ same-origin) แทน
 
   if (!token) {
     return res.status(401).json({ success: false, message: 'ไม่มี Token กรุณาเข้าสู่ระบบ' });
@@ -26,8 +26,9 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // ดึงข้อมูลล่าสุดจาก DB เพื่อตรวจสอบสถานะและ Role จริงๆ (ไม่เชื่อ Token)
+    // email/name จำเป็นต่อ permission ของ faculty (ตรวจสิทธิ์จาก team.email) และใช้แสดงผล
     const user = await User.findByPk(decoded.id, {
-      attributes: ['id', 'role', 'department_id', 'is_active']
+      attributes: ['id', 'role', 'department_id', 'is_active', 'email', 'name', 'created_at', 'token_version']
     });
 
     if (!user) {
@@ -38,11 +39,20 @@ const authenticate = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'บัญชีนี้ถูกปิดใช้งาน' });
     }
 
+    // เพิกถอน token: ถ้า tv ใน token ไม่ตรงกับใน DB แสดงว่าถูก logout/เปลี่ยนรหัสไปแล้ว → token นี้ตาย
+    // (token รุ่นเก่าก่อนมี feature นี้จะไม่มี tv → treat เป็นไม่ตรง บังคับ login ใหม่ครั้งเดียว)
+    if (decoded.tv !== user.token_version) {
+      return res.status(401).json({ success: false, message: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' });
+    }
+
     // Attach ข้อมูลที่สดใหม่จาก DB ลงใน req.user
     req.user = {
       id: user.id,
       role: user.role,
-      department_id: user.department_id
+      department_id: user.department_id,
+      email: user.email,
+      name: user.name,
+      created_at: user.created_at
     };
     
     next();

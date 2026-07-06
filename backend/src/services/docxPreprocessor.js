@@ -204,17 +204,92 @@ function processXml(xml) {
   return { xml: pass2, replacements };
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// EXTRAS EXTRACTION — เนื้อหาที่ mammoth ทิ้งโดยเงียบ ๆ
+// ════════════════════════════════════════════════════════════════════════════
+//
+// จากการตรวจไฟล์ มคอ.2 จริง 30 ไฟล์:
+//   - Text box 28/30 ไฟล์ มีข้อความจริง เช่น "ฉบับผ่านสภามหาวิทยาลัย ครั้งที่ 9/2561"
+//     (ตราอนุมัติ) → mammoth ไม่อ่าน <w:txbxContent> เลย
+//   - Header/Footer 28/30 ไฟล์ แต่ส่วนใหญ่เป็น "เลขหน้า" → ต้องกรองทิ้ง ไม่งั้นเป็นขยะ
+
+/** ดึงข้อความล้วนจาก XML (join เฉพาะ <w:t>) */
+function extractTextFromXml(xml) {
+  const parts = [];
+  const re = /<w:t[^>]*>([^<]*)<\/w:t>/g;
+  let m;
+  while ((m = re.exec(xml))) parts.push(m[1]);
+  return parts.join('').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * แยกแยะว่าข้อความ header/footer เป็น "เลขหน้า" (ขยะ) หรือเนื้อหาจริง
+ * เลขหน้ามักเป็น: ตัวเลขล้วน / อักษรไทยตัวเดียว (ก ข ค) / สั้นมาก
+ */
+function isPageNumberNoise(text) {
+  if (!text) return true;
+  const t = text.trim();
+  if (t.length < 4) return true;            // "2", "ข", "ก-1"
+  if (/^[\d\s/.-]+$/.test(t)) return true;  // "12", "1 / 50"
+  // เหลือเฉพาะตัวอักษร (ตัด space/เลข) แล้วต้องมีเนื้อพอสมควร
+  const letters = t.replace(/[\s\d/.()-]/g, '');
+  return letters.length < 3;
+}
+
+/**
+ * เก็บเนื้อหาที่ mammoth ทิ้ง: textbox + header/footer (กรองเลขหน้าออก)
+ * @param {AdmZip} zip
+ * @returns {{ textboxes: string[], headerFooters: string[] }}
+ */
+function collectExtras(zip) {
+  const get = (name) => {
+    const e = zip.getEntry(name);
+    return e ? e.getData().toString('utf-8') : '';
+  };
+
+  // ── Text boxes (ทั้ง DrawingML <w:txbxContent> และ VML <v:textbox>) ──
+  const docXml = get('word/document.xml');
+  const textboxes = [];
+  const seen = new Set();
+  const tbxRe = /<w:txbxContent\b[^>]*>([\s\S]*?)<\/w:txbxContent>/g;
+  let m;
+  while ((m = tbxRe.exec(docXml))) {
+    const txt = extractTextFromXml(m[1]);
+    if (txt.length >= 3 && !seen.has(txt)) {   // dedupe (textbox ซ้ำทุกหน้า)
+      seen.add(txt);
+      textboxes.push(txt);
+    }
+  }
+
+  // ── Header / Footer (กรองเลขหน้าทิ้ง) ──
+  const headerFooters = [];
+  const hfSeen = new Set();
+  for (const part of zip.getEntries()) {
+    if (!/word\/(header|footer)\d*\.xml$/.test(part.entryName)) continue;
+    const txt = extractTextFromXml(part.getData().toString('utf-8'));
+    if (!isPageNumberNoise(txt) && !hfSeen.has(txt)) {
+      hfSeen.add(txt);
+      headerFooters.push(txt);
+    }
+  }
+
+  return { textboxes, headerFooters };
+}
+
 /**
  * Main preprocessing function
  * ════════════════════════════════════════════════════════════════════════════
- * 
+ *
  * Takes a DOCX file (as Buffer or file path) and returns a processed Buffer
  * with all <w:sym> tags replaced by standard Unicode text.
- * 
+ *
  * @param {Buffer|string} input - DOCX file buffer or file path
- * @returns {Buffer} Processed DOCX buffer ready for mammoth.convertToHtml()
+ * @param {{ withExtras?: boolean }} [opts]
+ * @returns {Buffer | { buffer: Buffer, extras: object }}
+ *          - default: Buffer (backward compatible)
+ *          - withExtras: { buffer, extras } พร้อมเนื้อหา textbox/header/footer
  */
-function preprocessDocx(input) {
+function preprocessDocx(input, opts = {}) {
   const zip = new AdmZip(input);
   let totalReplacements = 0;
 
@@ -252,6 +327,12 @@ function preprocessDocx(input) {
     console.log(`[docxPreprocessor] แปลง <w:sym> สำเร็จ ${totalReplacements} จุด`);
   }
 
+  if (opts.withExtras) {
+    // เก็บ extras จาก zip (หลังแก้ symbol แล้ว) ก่อน repack
+    const extras = collectExtras(zip);
+    return { buffer: zip.toBuffer(), extras };
+  }
+
   return zip.toBuffer();
 }
 
@@ -267,10 +348,74 @@ function preprocessDocxFile(filePath) {
   return preprocessDocx(buffer);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// HEADING PROMOTION — มคอ.2 ไม่ใช้ Heading style (เป็น Normal + bold + 18pt)
+// ════════════════════════════════════════════════════════════════════════════
+//
+// mammoth จึงแปลง "หมวดที่ 1 ข้อมูลทั่วไป" ออกมาเป็น <p><strong>...</strong></p>
+// ทำให้โครงสร้างหมวด 1-8 แบนหมด → promote เป็น <h2> ด้วย heuristic ตามเนื้อหา
+// (styleMap ใช้ไม่ได้เพราะหัวข้อไม่มี style name ให้ map)
+
+// หัวข้อระดับหมวดของ มคอ.2 (และเอกสารหลักสูตรทั่วไป)
+const HEADING_PATTERN = /^(หมวดที่|ส่วนที่|ภาคผนวก|บทที่)\s*[\d๑-๙]+/;
+
+/**
+ * Promote <p> ที่เป็นหัวข้อหมวด (bold ทั้งย่อหน้า) → <h2>
+ * - ต้องมี <strong>/<b> (เป็นหัวข้อตัวหนา)
+ * - ข้อความขึ้นต้นด้วย "หมวดที่ N / ส่วนที่ N / ภาคผนวก N"
+ * - ไม่ลงท้ายด้วยตัวเลข (กันสารบัญ เช่น "หมวดที่ 1 ข้อมูลทั่วไป6")
+ */
+function promoteHeadings(html) {
+  if (!html) return '';
+  return html.replace(/<p>([\s\S]*?)<\/p>/g, (full, inner) => {
+    if (!/<(strong|b)\b/i.test(inner)) return full;
+    const text = inner.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    if (!HEADING_PATTERN.test(text)) return full;
+    if (/[\d๑-๙]$/.test(text)) return full;           // ลงท้ายด้วยเลข = สารบัญ
+    if (text.length > 120) return full;               // ยาวเกินไปไม่ใช่หัวข้อ
+    const cleaned = inner.replace(/<\/?(strong|b)\b[^>]*>/gi, '').trim();
+    return `<h2>${cleaned}</h2>`;
+  });
+}
+
+/**
+ * Full DOCX → HTML pipeline (จุดเดียวจบ)
+ * ════════════════════════════════════════════════════════════════════════════
+ *   1. preprocess <w:sym>
+ *   2. mammoth.convertToHtml (styleMap + default style map)
+ *   3. promote หัวข้อหมวด → <h2>
+ *   4. ตัดรูปฟอร์แมตที่ browser แสดงไม่ได้ (EMF/WMF/TIFF → ไอคอนรูปแตก)
+ *   5. normalizeSymbols (PUA ที่ยังค้าง)
+ *
+ * @param {Buffer|string} input - DOCX buffer หรือ file path
+ * @returns {Promise<string>} HTML พร้อมแสดง preview
+ */
+async function renderDocxHtml(input) {
+  const mammoth = require('mammoth');
+  const { normalizeSymbols } = require('./tqf2SymbolNormalizer');
+
+  const buffer = preprocessDocx(input);
+
+  const result = await mammoth.convertToHtml({ buffer }, {
+    includeDefaultStyleMap: true,
+    styleMap: [
+      "p[style-name='Title'] => h1:fresh",
+      "p[style-name='heading 6'] => h6:fresh",
+    ],
+  });
+
+  let html = promoteHeadings(result.value);
+  html = html.replace(/<img[^>]+src="data:image\/(?:x-emf|x-wmf|emf|wmf|tiff)[^"]*"[^>]*\/?>/gi, '');
+  return normalizeSymbols(html);
+}
+
 module.exports = {
   preprocessDocx,
   preprocessDocxFile,
   processXml,
   resolveSymChar,
+  collectExtras,
+  promoteHeadings,
+  renderDocxHtml,
   SYM_CHAR_MAP,
 };

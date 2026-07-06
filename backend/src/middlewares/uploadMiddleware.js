@@ -106,6 +106,14 @@ const resourceFilter = (req, file, cb) => {
   }
 };
 
+// ประกาศรับได้ทั้งรูปปก (field: image) และไฟล์แนบเอกสาร (field: attachments)
+// เลือกตัวกรองตาม fieldname — รูปใช้ imageFilter, ไฟล์แนบใช้ resourceFilter
+const announcementCombinedFilter = (req, file, cb) => {
+  if (file.fieldname === 'image') return imageFilter(req, file, cb);
+  if (file.fieldname === 'attachments') return resourceFilter(req, file, cb);
+  cb(null, false);
+};
+
 // Memory storage for in-memory processing (compare without writing to disk)
 const uploadTQF2Compare = multer({
   storage: multer.memoryStorage(),
@@ -113,10 +121,70 @@ const uploadTQF2Compare = multer({
   limits: { fileSize: MAX_SIZE },
 });
 
+// ─── Magic-byte verification (กันไฟล์ปลอมนามสกุล) ───────────────────────────
+// fileFilter เช็คได้แค่ "นามสกุล" ซึ่งผู้ใช้ปลอมได้ง่าย (เช่น script.html → report.pdf)
+// middleware นี้อ่าน byte จริงต้นไฟล์ เทียบกับ signature ของชนิดที่อนุญาต
+// รันหลัง multer (ไฟล์ถูกเขียนลง disk แล้ว) — ถ้าไม่ผ่าน ลบไฟล์ทั้ง request ทิ้งทันที
+const FILE_SIGNATURES = {
+  pdf:  [[0x25, 0x50, 0x44, 0x46]],                                    // "%PDF"
+  zip:  [[0x50, 0x4B, 0x03, 0x04], [0x50, 0x4B, 0x05, 0x06], [0x50, 0x4B, 0x07, 0x08]], // ZIP/OOXML (docx,xlsx,pptx)
+  ole2: [[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]],            // OLE2 (doc,xls,ppt รุ่นเก่า)
+};
+// .docx/.xlsx/.pptx คือ zip ข้างใน; .doc/.xls/.ppt ยอมรับทั้ง OLE2 และ zip (เผื่อ user rename docx → doc)
+const EXT_SIGNATURE_GROUP = {
+  '.pdf': ['pdf'],
+  '.docx': ['zip'], '.xlsx': ['zip'], '.pptx': ['zip'], '.zip': ['zip'],
+  '.doc': ['zip', 'ole2'], '.xls': ['zip', 'ole2'], '.ppt': ['zip', 'ole2'],
+};
+
+// รวบรวม file object จาก multer ทุกรูปแบบ: .single → req.file, .array → req.files[],
+// .fields → req.files{ field: [] }
+const collectUploadedFiles = (req) => {
+  if (req.file) return [req.file];
+  if (Array.isArray(req.files)) return req.files;
+  if (req.files && typeof req.files === 'object') return Object.values(req.files).flat();
+  return [];
+};
+
+const headBytes = (file) => {
+  if (file.buffer) return file.buffer.subarray(0, 8);          // memoryStorage
+  const fd = fs.openSync(file.path, 'r');                       // diskStorage
+  try { const b = Buffer.alloc(8); fs.readSync(fd, b, 0, 8, 0); return b; }
+  finally { fs.closeSync(fd); }
+};
+
+const cleanupUploadedFiles = (files) => {
+  for (const f of files) {
+    if (f.path) { try { fs.unlinkSync(f.path); } catch { /* best-effort */ } }
+  }
+};
+
+const verifyUploadSignature = (req, res, next) => {
+  try {
+    const files = collectUploadedFiles(req);
+    for (const file of files) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const groups = EXT_SIGNATURE_GROUP[ext];
+      if (!groups) continue; // รูปภาพ ฯลฯ — ผ่าน (sharp re-encode ตรวจของจริงให้แล้ว)
+      const head = headBytes(file);
+      const ok = groups.some(g => FILE_SIGNATURES[g].some(sig => sig.every((byte, i) => head[i] === byte)));
+      if (!ok) {
+        cleanupUploadedFiles(files); // ลบทุกไฟล์ใน request นี้ ป้องกันไฟล์อันตราย/ขยะค้าง
+        return res.status(400).json({
+          success: false,
+          message: `ไฟล์ "${file.originalname}" ไม่ใช่ไฟล์ ${ext.replace('.', '').toUpperCase()} จริง (เนื้อไฟล์ไม่ตรงกับนามสกุล)`,
+        });
+      }
+    }
+    next();
+  } catch (err) { next(err); }
+};
+
 const uploadDocument = multer({ storage, fileFilter, limits: { fileSize: MAX_SIZE } });
 const uploadCommittee = multer({ storage: committeeStorage, fileFilter, limits: { fileSize: MAX_SIZE } });
-const uploadAnnouncement = multer({ storage: announcementStorage, fileFilter: imageFilter, limits: { fileSize: 5242880 } });
+// limit รวม 50MB (รูปจะถูก sharp re-encode ให้เล็กลงภายหลังอยู่แล้ว, ไฟล์แนบรองรับเอกสารใหญ่ได้)
+const uploadAnnouncement = multer({ storage: announcementStorage, fileFilter: announcementCombinedFilter, limits: { fileSize: MAX_SIZE } });
 const uploadTQF2 = multer({ storage: tqf2Storage, fileFilter, limits: { fileSize: MAX_SIZE } });
 const uploadResource = multer({ storage: resourceStorage, fileFilter: resourceFilter, limits: { fileSize: MAX_SIZE } });
 
-module.exports = { uploadDocument, uploadCommittee, uploadAnnouncement, uploadTQF2, uploadResource, uploadTQF2Compare };
+module.exports = { uploadDocument, uploadCommittee, uploadAnnouncement, uploadTQF2, uploadResource, uploadTQF2Compare, verifyUploadSignature };

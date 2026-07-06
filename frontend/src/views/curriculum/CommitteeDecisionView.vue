@@ -4,12 +4,12 @@
     <!-- Header -->
     <div class="flex items-center gap-4">
       <button @click="router.back()"
-        class="flex-shrink-0 w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-primary-700 hover:bg-primary-50 hover:border-primary-100 active:scale-[0.88] transition-all ease-ios focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+        class="flex-shrink-0 w-11 h-11 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-primary-700 hover:bg-primary-50 hover:border-primary-100 active:scale-[0.88] transition-all ease-ios focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
         <PhCaretLeft class="w-5 h-5" />
       </button>
       <div class="min-w-0">
         <div v-if="!pageLoading" class="flex items-center gap-2 mb-1 flex-wrap">
-          <span class="text-xs font-bold uppercase tracking-widest"
+          <span class="text-xs font-bold"
             :class="{
               'text-gray-500': COMMITTEE_LEVEL_LABELS[step?.committee_type] === 'ระดับคณะ',
               'text-primary-600': COMMITTEE_LEVEL_LABELS[step?.committee_type] === 'ระดับมหาวิทยาลัย',
@@ -17,7 +17,6 @@
             }">
             บันทึกมติที่ประชุม
           </span>
-          <span class="text-gray-300">·</span>
           <span class="text-xs font-medium text-gray-400">{{ COMMITTEE_LEVEL_LABELS[step?.committee_type] }}</span>
         </div>
         <h2 class="text-xl font-bold text-gray-900 tracking-tight leading-snug truncate">
@@ -31,8 +30,14 @@
 
     <!-- Skeleton -->
     <div v-if="pageLoading" class="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-      <div class="bg-white rounded-xl border border-gray-200 h-96 animate-pulse"></div>
-      <div class="bg-white rounded-xl border border-gray-200 h-96 animate-pulse"></div>
+      <div class="bg-white rounded-2xl border border-gray-200 h-96 animate-pulse"></div>
+      <div class="bg-white rounded-2xl border border-gray-200 h-96 animate-pulse"></div>
+    </div>
+
+    <!-- Fetch error -->
+    <div v-else-if="fetchError" class="bg-white rounded-2xl border border-red-200 p-8 text-center">
+      <p class="text-sm font-medium text-red-600">โหลดข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้า</p>
+      <button @click="router.back()" class="mt-3 text-xs text-gray-500 hover:text-gray-700 underline">กลับ</button>
     </div>
 
     <!-- Content -->
@@ -42,12 +47,12 @@
       <div class="space-y-6">
 
         <!-- มติที่ประชุม -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div class="border-b border-gray-200 bg-gray-50/50 px-6 py-4 rounded-t-xl">
-            <h3 class="text-base font-semibold text-gray-900">มติที่ประชุม <span class="text-red-500">*</span></h3>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
+          <div class="px-6 pt-5 pb-4 border-b border-gray-100">
+            <h3 class="text-base font-bold text-gray-900">มติที่ประชุม <span class="text-red-500">*</span></h3>
           </div>
           <div class="p-6">
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button type="button" @click="form.status = 'approved'"
                 :class="['flex items-center gap-3 px-4 py-4 rounded-xl border-2 transition-all duration-200 ease-ios text-left active:scale-[0.98]',
                   form.status === 'approved' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50']">
@@ -84,9 +89,9 @@
         </div>
 
         <!-- รายละเอียดการประชุม -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div class="border-b border-gray-200 bg-gray-50/50 px-6 py-4 rounded-t-xl">
-            <h3 class="text-base font-semibold text-gray-900">รายละเอียดการประชุม</h3>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
+          <div class="px-6 pt-5 pb-4 border-b border-gray-100">
+            <h3 class="text-base font-bold text-gray-900">รายละเอียดการประชุม</h3>
           </div>
           <div class="p-6 space-y-5">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -117,45 +122,63 @@
         </div>
 
         <!-- ไฟล์รายงาน -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div class="border-b border-gray-200 bg-gray-50/50 px-6 py-4 rounded-t-xl">
-            <h3 class="text-base font-semibold text-gray-900">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
+          <div class="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between gap-3">
+            <h3 class="text-base font-bold text-gray-900">
               ไฟล์รายงานการประชุม
               <span class="text-sm font-normal text-gray-400 ml-1">(ไม่บังคับ)</span>
             </h3>
+            <span v-if="decisionFiles.length" class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-lg bg-primary-100 text-primary-700 border border-primary-200">
+              {{ decisionFiles.length }} ไฟล์
+            </span>
           </div>
-          <div class="p-6">
-            <div v-if="!decisionFile"
-              class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer transition-all hover:border-primary-400 hover:bg-primary-50/40 group"
-              @click="$refs.fileInput.click()">
-              <div class="w-12 h-12 bg-gray-100 group-hover:bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors">
-                <PhPaperclip class="w-6 h-6 text-gray-400 group-hover:text-primary-600 transition-colors" />
-              </div>
-              <p class="text-sm font-semibold text-gray-600 group-hover:text-primary-700 transition-colors">คลิกเพื่อเลือกไฟล์</p>
-              <p class="text-xs text-gray-400 mt-1">PDF หรือ DOCX</p>
-            </div>
-            <div v-else class="flex items-center gap-3.5 px-4 py-3.5 bg-primary-50 border border-primary-200 rounded-xl">
-              <FileIcon :file-type="decisionFile.name.split('.').pop()" size="md" class="shrink-0" />
-              <div class="flex-1 min-w-0">
-                <span class="text-sm font-semibold text-primary-800 block break-all">{{ decisionFile.name }}</span>
-              </div>
-              <button type="button" @click="decisionFile = null; $refs.fileInput.value = ''"
-                class="w-8 h-8 rounded-lg flex items-center justify-center text-primary-500 hover:text-red-600 hover:bg-red-50 active:scale-[0.88] transition-all ease-ios shrink-0">
-                <PhX class="w-4 h-4" />
-              </button>
-            </div>
-            <input ref="fileInput" type="file" accept=".pdf,.docx" @change="decisionFile = $event.target.files[0]" class="hidden" />
+          <div class="p-6 space-y-3">
+            <!-- รายการไฟล์ที่เลือก (รองรับหลายไฟล์) -->
+            <ul v-if="decisionFiles.length" class="space-y-2">
+              <li v-for="(file, idx) in decisionFiles" :key="`${file.name}_${file.size}_${idx}`"
+                class="flex items-center gap-3.5 px-4 py-3 bg-primary-50 border border-primary-200 rounded-xl">
+                <FileIcon :file-type="file.name.split('.').pop()" size="md" class="shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <span class="text-sm font-semibold text-primary-800 block break-all leading-snug">{{ file.name }}</span>
+                  <span class="text-xs font-medium text-primary-600/80 tabular-nums">{{ formatSize(file.size) }}</span>
+                </div>
+                <button type="button" @click="removeFile(idx)"
+                  :aria-label="`ลบไฟล์ ${file.name}`"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-primary-500 hover:text-red-600 hover:bg-red-50 active:scale-[0.88] transition-all ease-ios shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+                  <PhX class="w-4 h-4" aria-hidden="true" />
+                </button>
+              </li>
+            </ul>
+
+            <!-- Dropzone — เลือก/เพิ่มไฟล์ได้เสมอ -->
+            <button type="button"
+              class="w-full border-2 border-dashed border-gray-200 rounded-xl text-center cursor-pointer transition-all hover:border-primary-400 hover:bg-primary-50/40 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+              :class="decisionFiles.length ? 'py-4' : 'p-8'"
+              :aria-label="decisionFiles.length ? 'เพิ่มไฟล์รายงานการประชุม' : 'เลือกไฟล์รายงานการประชุม'"
+              @click="fileInput.click()">
+              <template v-if="!decisionFiles.length">
+                <div class="w-12 h-12 bg-gray-100 group-hover:bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors">
+                  <PhPaperclip class="w-6 h-6 text-gray-400 group-hover:text-primary-600 transition-colors" aria-hidden="true" />
+                </div>
+                <p class="text-sm font-semibold text-gray-600 group-hover:text-primary-700 transition-colors">คลิกเพื่อเลือกไฟล์</p>
+                <p class="text-xs text-gray-400 mt-1">PDF หรือ DOCX — เลือกได้หลายไฟล์</p>
+              </template>
+              <span v-else class="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 group-hover:text-primary-700 transition-colors">
+                <PhPlus class="w-4 h-4" aria-hidden="true" /> เพิ่มไฟล์อีก
+              </span>
+            </button>
+            <input ref="fileInput" type="file" accept=".pdf,.docx" multiple @change="addFiles" class="hidden" />
           </div>
         </div>
 
       </div>
 
       <!-- RIGHT: workspace documents -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="max-height: 680px">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col" style="max-height: 680px">
         <div class="shrink-0 px-5 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between gap-3">
           <div>
             <p class="text-sm font-bold text-gray-800">เอกสารนำเสนอต่อคณะกรรมการ</p>
-            <p class="text-xs text-gray-500 mt-0.5">เลือกไฟล์จาก workspace ที่ใช้ในการประชุม</p>
+            <p class="text-xs text-gray-500 mt-0.5">เลือกไฟล์เอกสารของหลักสูตรที่ใช้ในการประชุม</p>
           </div>
           <span v-if="workspaceDocs.length > 0" class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0"
             :class="selectedDocIds.size > 0 ? 'bg-primary-100 text-primary-700 border border-primary-200' : 'bg-gray-100 text-gray-500 border border-gray-200'">
@@ -174,8 +197,8 @@
           <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
             <PhFile class="w-7 h-7 text-gray-300" />
           </div>
-          <p class="text-sm font-semibold text-gray-600">ยังไม่มีเอกสารใน workspace</p>
-          <p class="text-xs text-gray-400">อัปโหลดเอกสารก่อนบันทึกมติ</p>
+          <p class="text-sm font-semibold text-gray-600">ยังไม่มีเอกสารในหลักสูตรนี้</p>
+          <p class="text-xs text-gray-400">กลับไปอัปโหลดเอกสารก่อน แล้วค่อยมาบันทึกมติ</p>
         </div>
 
         <!-- Doc list -->
@@ -186,7 +209,7 @@
                 :checked="selectedDocIds.size === workspaceDocs.length && workspaceDocs.length > 0"
                 @change="selectedDocIds.size === workspaceDocs.length ? clearAllDocs() : selectAllDocs()"
                 class="rounded text-primary-600 focus:ring-primary-500 w-4 h-4 border-gray-300" />
-              <span class="text-xs font-bold text-gray-600 uppercase tracking-wider">เลือกทั้งหมด</span>
+              <span class="text-xs font-bold text-gray-600">เลือกทั้งหมด</span>
             </label>
             <button v-if="selectedDocIds.size > 0" type="button" @click="clearAllDocs"
               class="text-xs font-semibold text-gray-400 hover:text-red-600 transition-colors ease-ios">
@@ -202,7 +225,7 @@
               <FileIcon :file-type="doc.file_type" size="sm" class="shrink-0" />
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-gray-900 leading-snug break-all">{{ doc.original_name }}</p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{{ doc.file_type?.toUpperCase() }}</p>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mt-0.5">{{ doc.file_type?.toUpperCase() }}</p>
               </div>
               <PhCheck v-if="selectedDocIds.has(doc.id)" class="w-4 h-4 text-primary-600 shrink-0" />
             </label>
@@ -216,7 +239,7 @@
     <div v-if="!pageLoading" class="flex items-center justify-end gap-3 pb-8">
       <button type="button" @click="router.back()"
         class="px-5 py-3 text-sm font-semibold text-gray-600 hover:text-gray-900 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 active:scale-[0.97] transition-all duration-150 ease-ios">
-        ยกเลิก
+        ย้อนกลับ
       </button>
       <button @click="handleSubmit" :disabled="submitting"
         :class="['inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold text-white shadow-sm transition-all ease-ios active:scale-[0.97] disabled:opacity-60',
@@ -234,14 +257,16 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import api from '@/services/api';
+import { curriculumService } from '@/services/curriculumService';
+import { committeeService } from '@/services/committeeService';
+import { documentService } from '@/services/documentService';
 import FileIcon from '@/components/common/FileIcon.vue';
 import FormDatePicker from '@/components/common/FormDatePicker.vue';
 import { formatThaiDate } from '@/utils/date';
 import { useToast } from '@/composables/useToast';
 import {
   PhCaretLeft, PhCheck, PhCheckCircle, PhArrowCounterClockwise,
-  PhX, PhPaperclip, PhFile,
+  PhX, PhPaperclip, PhFile, PhPlus,
 } from '@phosphor-icons/vue';
 
 const router = useRouter();
@@ -270,14 +295,33 @@ const curriculum     = ref(null);
 const step           = ref(null);
 const workspaceDocs  = ref([]);
 const selectedDocIds = ref(new Set());
-const decisionFile   = ref(null);
+const decisionFiles  = ref([]);
 const fileInput      = ref(null);
+
+const formatSize = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
+
+// เพิ่มไฟล์เข้าลิสต์ (กันซ้ำด้วยชื่อ+ขนาด) แล้ว reset input เพื่อให้เลือกไฟล์เดิมซ้ำได้
+const addFiles = (e) => {
+  const incoming = Array.from(e.target.files || []);
+  const seen = new Set(decisionFiles.value.map(f => `${f.name}_${f.size}`));
+  for (const f of incoming) {
+    const key = `${f.name}_${f.size}`;
+    if (!seen.has(key)) { decisionFiles.value.push(f); seen.add(key); }
+  }
+  e.target.value = '';
+};
+const removeFile = (idx) => { decisionFiles.value.splice(idx, 1); };
 
 const form = ref({ status: 'approved', decision_date: '', meeting_number: '', notes: '', revision_deadline: '' });
 
 const pageLoading = ref(false);
 const docsLoading = ref(false);
 const submitting  = ref(false);
+const fetchError  = ref(false);
 
 onMounted(async () => {
   const { id, stepId } = route.params;
@@ -285,15 +329,17 @@ onMounted(async () => {
   docsLoading.value = true;
   try {
     const [curRes, stepsRes, docsRes] = await Promise.all([
-      api.get(`/curricula/${id}`),
-      api.get(`/curricula/${id}/committee-steps`),
-      api.get(`/curricula/${id}/documents`),
+      curriculumService.getById(id),
+      committeeService.getSteps(id),
+      documentService.getDocuments(id),
     ]);
     curriculum.value    = curRes.data.data;
     const steps         = stepsRes.data.data || [];
     step.value          = steps.find(s => String(s.id) === String(stepId)) || null;
     workspaceDocs.value = docsRes.data.data || [];
     selectedDocIds.value = new Set(workspaceDocs.value.map(d => d.id));
+  } catch {
+    fetchError.value = true;
   } finally {
     pageLoading.value = false;
     docsLoading.value = false;
@@ -310,12 +356,12 @@ const handleSubmit = async () => {
   try {
     const fd = new FormData();
     Object.entries(form.value).forEach(([k, v]) => { if (v) fd.append(k, v); });
-    if (decisionFile.value) fd.append('file', decisionFile.value);
+    decisionFiles.value.forEach(f => fd.append('files', f));
     fd.append('linked_document_ids', JSON.stringify([...selectedDocIds.value]));
-    await api.post(`/curricula/committee-steps/${step.value.id}/decision`, fd);
+    await committeeService.submitDecision(step.value.id, fd);
     const label = form.value.status === 'approved' ? 'บันทึกมติเห็นชอบสำเร็จ' : 'บันทึกมติแก้ไขสำเร็จ';
     toast.success(label, COMMITTEE_LABELS[step.value.committee_type]);
-    router.push(`/curricula/${route.params.id}`);
+    router.replace(`/curricula/${route.params.id}`);
   } catch (e) {
     toast.error('บันทึกไม่สำเร็จ', e.response?.data?.message || 'กรุณาลองใหม่อีกครั้ง');
   } finally {

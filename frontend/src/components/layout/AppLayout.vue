@@ -53,7 +53,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden font-sans dark:bg-[var(--dm-page)]">
+  <div class="flex h-screen overflow-hidden font-sans">
 
     <!-- Mobile backdrop (tap to close sidebar) -->
     <Transition
@@ -83,8 +83,8 @@ onUnmounted(() => {
 
     <!-- Main content -->
     <div class="flex flex-col flex-1 overflow-hidden min-w-0">
-      <Navbar @toggle-menu="toggleSidebar" />
-      <main class="flex-1 overflow-y-auto bg-gray-50/50 dark:bg-[var(--dm-page)] px-3 sm:px-5 lg:px-8 pt-4 sm:pt-6 pb-10 overflow-x-hidden" style="transition: background-color 0.25s ease;">
+      <Navbar @toggle-menu="toggleSidebar" :show-menu-button="isMobile || (isSidebarCollapsed && !isTablet)" />
+      <main class="flex-1 overflow-y-auto bg-gray-50/50 px-3 sm:px-5 lg:px-8 pt-4 sm:pt-6 pb-10 overflow-x-hidden">
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
             <component :is="Component" :key="$route.fullPath" />

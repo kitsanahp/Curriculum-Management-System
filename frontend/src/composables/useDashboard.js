@@ -1,7 +1,6 @@
 import { ref, computed } from 'vue';
-import api from '@/services/api';
+import { dashboardService } from '@/services/dashboardService';
 
-// ── Config per role ──────────────────────────────────────────────────────────
 export const DASHBOARD_CONFIG = {
   admin: {
     showStats:      ['total', 'needs_action', 'need_revision', 'approved'],
@@ -33,35 +32,36 @@ export const DASHBOARD_CONFIG = {
   },
 };
 
-// ── Singleton state — shared across all useDashboard() calls ─────────────────
 const curricula  = ref([]);
 const stats      = ref({
   total: 0, approved: 0, pending: 0,
   in_committee: 0, need_revision: 0,
   needs_action: 0, approval_rate: 0,
 });
-const loading   = ref(false);
-const lastFetch = ref(null);
+const loading     = ref(false);
+const lastFetch   = ref(null);
+const fetchError  = ref(null);
 
 async function fetchSummary({ force = false } = {}) {
   if (!force && lastFetch.value && Date.now() - lastFetch.value < 30_000) return;
   loading.value = true;
+  fetchError.value = null;
   try {
-    const { data } = await api.get('/dashboard/summary');
+    const { data } = await dashboardService.getSummary();
     curricula.value = data.data.curricula;
     stats.value     = data.data.stats;
     lastFetch.value = Date.now();
+  } catch (e) {
+    fetchError.value = e;
   } finally {
     loading.value = false;
   }
 }
 
-// Call this after any action that changes curriculum status
 export function invalidateDashboard() {
   lastFetch.value = null;
 }
 
-// ── Composable ───────────────────────────────────────────────────────────────
 export function useDashboard() {
   const recentCurricula = computed(() =>
     [...curricula.value]
@@ -85,7 +85,7 @@ export function useDashboard() {
   );
 
   return {
-    curricula, stats, loading,
+    curricula, stats, loading, fetchError,
     recentCurricula, actionQueue, revisionItems, pendingItems,
     fetch: fetchSummary,
   };

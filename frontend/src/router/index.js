@@ -16,6 +16,18 @@ const routes = [
     component: () => import('@/views/auth/RegisterView.vue'),
     meta: { guest: true }
   },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/auth/ForgotPasswordView.vue'),
+    meta: { guest: true }
+  },
+  {
+    // เปิดได้ทุกคน (ผู้ใช้กดจากลิงก์ในอีเมล แม้ยังไม่ได้ login)
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('@/views/auth/ResetPasswordView.vue'),
+  },
 
   // ─── หน้าที่ต้อง login (ครอบด้วย AppLayout) ────────────────────────────
   {
@@ -28,7 +40,8 @@ const routes = [
         redirect: () => {
           const authStore = useAuthStore();
           const role = authStore.user?.role;
-          if (role === 'faculty' || role === 'staff') return '/faculty';
+          if (role === 'faculty') return '/curricula';   // อาจารย์ไม่มีหน้าหลัก → ไปรายการหลักสูตร
+          if (role === 'staff') return '/faculty';
           if (role === 'registrar') return '/downloads';
           return '/dashboard';
         }
@@ -45,7 +58,7 @@ const routes = [
         path: 'faculty',
         name: 'FacultyDashboard',
         component: () => import('@/views/dashboard/DashboardView.vue'),
-        meta: { roles: ['faculty', 'staff'] }
+        meta: { roles: ['staff'] }
       },
       {
         path: 'registrar',
@@ -122,6 +135,12 @@ const routes = [
         meta: { roles: ['admin'] }
       },
       {
+        path: 'resources/:id/edit',
+        name: 'ResourcesEdit',
+        component: () => import('@/views/resources/ResourcesCreateView.vue'),
+        meta: { roles: ['admin'] }
+      },
+      {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/admin/UsersView.vue'),
@@ -131,6 +150,12 @@ const routes = [
         path: 'users/:id/edit',
         name: 'UserEdit',
         component: () => import('@/views/admin/UserEditView.vue'),
+        meta: { roles: ['admin'] }
+      },
+      {
+        path: 'master-data',
+        name: 'MasterData',
+        component: () => import('@/views/admin/MasterDataView.vue'),
         meta: { roles: ['admin'] }
       },
       {
@@ -167,8 +192,9 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.roles && authStore.isLoggedIn) {
     if (!to.meta.roles.includes(authStore.user?.role)) {
       const role = authStore.user?.role;
-      if (role === 'faculty' || role === 'staff') return next('/faculty');
-      if (role === 'registrar')                   return next('/downloads');
+      if (role === 'faculty')   return next('/curricula');
+      if (role === 'staff')     return next('/faculty');
+      if (role === 'registrar') return next('/downloads');
       return next('/dashboard');
     }
   }
