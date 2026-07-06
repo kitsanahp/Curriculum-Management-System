@@ -414,20 +414,35 @@ const send = async (to, subject, html, extraAttachments = []) => {
   const testTo = process.env.EMAIL_TEST_TO && process.env.EMAIL_TEST_TO.trim();
   const finalSubject = testTo ? `[TEST→${original}] ${subject}` : subject;
 
-  if (BREVO_API_KEY) {
-    const emails = testTo
-      ? [testTo]
-      : (Array.isArray(to) ? to : String(to).split(',').map((s) => s.trim())).filter(Boolean);
-    return sendViaBrevo(emails, finalSubject, html);
-  }
+  // ส่งแยกรายคนเสมอ — ห้ามยัดผู้รับหลายคนในฉบับเดียว เพราะทุกคนจะเห็นอีเมล
+  // ของกันและกันในช่อง to (privacy) และ log ชี้ตัวได้ว่าส่งถึงใครพลาด
+  const recipients = testTo
+    ? [testTo]
+    : [...new Set((Array.isArray(to) ? to : String(to).split(',')).map((s) => String(s).trim()).filter(Boolean))];
 
-  await transporter.sendMail({
-    from: FROM,
-    to: testTo || original,
-    subject: finalSubject,
-    html,
-    attachments: [...LOGO_ATTACHMENTS, ...extraAttachments],
-  });
+  const sendOne = (email) => BREVO_API_KEY
+    ? sendViaBrevo([email], finalSubject, html)
+    : transporter.sendMail({
+        from: FROM,
+        to: email,
+        subject: finalSubject,
+        html,
+        attachments: [...LOGO_ATTACHMENTS, ...extraAttachments],
+      });
+
+  // ทีละชุดเล็ก ๆ กันชน rate limit ของ Brevo/Gmail เวลาประกาศถึงผู้ใช้จำนวนมาก
+  const BATCH = 8;
+  const failures = [];
+  for (let i = 0; i < recipients.length; i += BATCH) {
+    const batch = recipients.slice(i, i + BATCH);
+    const results = await Promise.allSettled(batch.map(sendOne));
+    results.forEach((r, j) => {
+      if (r.status === 'rejected') failures.push(`${batch[j]} (${r.reason?.message || r.reason})`);
+    });
+  }
+  if (failures.length > 0) {
+    throw new Error(`ส่งไม่ถึง ${failures.length}/${recipients.length} ราย: ${failures.join('; ')}`);
+  }
 };
 
 // ─── 0. ตั้งรหัสผ่านใหม่ (admin ส่งลิงก์ให้ผู้ใช้) ───────────────────────────
