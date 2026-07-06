@@ -3,16 +3,26 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
+// Node 17+ เรียง DNS แบบ IPv6 ก่อน — บนคลาวด์บางเจ้า (เช่น Railway) เส้น IPv6 ไป
+// SMTP ค้างจน Connection timeout ทั้งที่ IPv4 ปกติ → บังคับใช้ IPv4 ก่อนเสมอ
+require('dns').setDefaultResultOrder('ipv4first');
+
+const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
+
 // ค่าทั้งหมดอ่านจาก .env — ห้าม hardcode credential ในโค้ด (กันรั่วผ่าน git/source map)
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'sandbox.smtp.mailtrap.io',
   port: parseInt(process.env.SMTP_PORT, 10) || 2525,
-  secure: process.env.SMTP_SECURE === 'true', // true เมื่อใช้ port 465 (SMTPS)
-  requireTLS: true, // บังคับ STARTTLS บน port 587 — จำเป็นสำหรับ Office365 (smtp.office365.com)
+  secure: SMTP_SECURE, // true เมื่อใช้ port 465 (SMTPS)
+  requireTLS: !SMTP_SECURE, // บังคับ STARTTLS เมื่อใช้ port 587 (ไม่เกี่ยวกับโหมด 465)
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  // ตัดปัญหาแขวนยาว: ต่อไม่ได้ให้ fail เร็ว ๆ พร้อม error ชัด ๆ ใน log
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 30000,
 });
 
 // เมลหลักของระบบ — ผู้ส่งทุกฉบับ และกล่องรับคำขอลงทะเบียน/แจ้งเตือนถึงระบบ (สลับบัญชีได้ผ่าน .env)
