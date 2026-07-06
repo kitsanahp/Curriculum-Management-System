@@ -8,6 +8,7 @@ exports.getAll = async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const queryOptions = {
+      where: { deleted_at: null }, // ซ่อน user ที่ถูก soft delete ออกจากทุกหน้ารายชื่อ
       attributes: { exclude: ['password'] },
       include: [{ model: Department, as: 'department' }],
       order: [['name', 'ASC']]
@@ -89,9 +90,14 @@ exports.deleteUser = async (req, res, next) => {
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้' });
     if (!user.is_active) {
-      // pending user ยังไม่มี FK references — hard delete ได้เลย
+      // pending user ปกติยังไม่มี FK references — hard delete ได้เลย
+      // แต่ถ้ามี (เช่น user เก่าที่เคย active มี audit logs) → fallback เป็น soft delete
       const { email, name } = user; // เก็บก่อน destroy
-      await user.destroy();
+      try {
+        await user.destroy();
+      } catch {
+        await User.update({ is_active: false, deleted_at: new Date() }, { where: { id: req.params.id } });
+      }
       // ลบ user ที่ pending = ปฏิเสธคำขอลงทะเบียน → แจ้งผลให้ผู้สมัครทราบ
       if (email) {
         emailService.sendAccountRejected(email, name)
@@ -99,7 +105,8 @@ exports.deleteUser = async (req, res, next) => {
       }
     } else {
       // active user อาจมี FK references ใน curricula/audit logs — soft delete แทน
-      await User.update({ is_active: false }, { where: { id: req.params.id } });
+      // ต้องประทับ deleted_at ด้วย ไม่งั้น is_active=false จะถูก UI ตีความว่า "รออนุมัติ"
+      await User.update({ is_active: false, deleted_at: new Date() }, { where: { id: req.params.id } });
     }
     res.json({ success: true, message: 'ลบผู้ใช้สำเร็จ' });
   } catch (error) { next(error); }

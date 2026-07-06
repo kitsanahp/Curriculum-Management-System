@@ -95,6 +95,21 @@ async function runMigrations() {
     console.log('[Migration] เพิ่ม token_version ใน users สำเร็จ');
   }
 
+  // เช็คว่า column deleted_at มีอยู่ใน users หรือยัง (soft delete — แยกจาก is_active ที่แปลว่ารออนุมัติ)
+  const [delRows] = await sequelize.query(`
+    SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = '${db}'
+      AND TABLE_NAME   = 'users'
+      AND COLUMN_NAME  = 'deleted_at'
+  `);
+  if (delRows[0].cnt === 0 && await tableExists('users')) {
+    await sequelize.query(`
+      ALTER TABLE users
+      ADD COLUMN deleted_at DATETIME NULL AFTER token_version;
+    `);
+    console.log('[Migration] เพิ่ม deleted_at ใน users สำเร็จ');
+  }
+
   // เช็คว่า column user_agent มีอยู่ใน audit_logs หรือยัง (forensic — รู้ว่าใช้อุปกรณ์/เบราว์เซอร์ใด)
   const [uaRows] = await sequelize.query(`
     SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS

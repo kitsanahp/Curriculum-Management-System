@@ -21,7 +21,10 @@ const User = sequelize.define('User', {
   locked_until: { type: DataTypes.DATE, allowNull: true },
   // ใช้เพิกถอน JWT แบบ stateless: token ฝัง tv ไว้ — ถ้า tv ใน token ≠ ค่านี้ใน DB = token ตาย
   // เพิ่มค่าเมื่อ logout / เปลี่ยนรหัส / reset → token เก่าทุกใบใช้ไม่ได้ทันที
-  token_version: { type: DataTypes.INTEGER, defaultValue: 0, allowNull: false }
+  token_version: { type: DataTypes.INTEGER, defaultValue: 0, allowNull: false },
+  // soft delete: user ที่ active แล้วลบจริงไม่ได้ (มี FK ใน curricula/audit logs)
+  // ห้ามใช้ is_active แทน เพราะ is_active=false แปลว่า "รออนุมัติ" ใน UI — คนละความหมาย
+  deleted_at: { type: DataTypes.DATE, allowNull: true }
 }, {
   tableName: 'users',
   indexes: [

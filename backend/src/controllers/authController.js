@@ -39,7 +39,8 @@ exports.login = async (req, res, next) => {
     }
 
     const user = await User.findOne({ where: { email }, include: ['department'] });
-    if (!user) {
+    // บัญชีที่ถูกลบ (soft delete) = ไม่มีตัวตน — ตอบเหมือนไม่พบบัญชี ไม่เผยว่าเคยมี
+    if (!user || user.deleted_at) {
       return res.status(401).json({ success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
@@ -172,6 +173,10 @@ exports.register = async (req, res, next) => {
     }
     const existing = await User.findOne({ where: { email } });
     if (existing) {
+      // อีเมลค้างอยู่กับบัญชีที่ถูกลบ — บอกให้ติดต่อเจ้าหน้าที่ (กู้บัญชี/เคลียร์อีเมลให้)
+      if (existing.deleted_at) {
+        return res.status(409).json({ success: false, message: 'อีเมลนี้เคยถูกใช้กับบัญชีที่ถูกลบไปแล้ว กรุณาติดต่อเจ้าหน้าที่หลักสูตรคณะ' });
+      }
       return res.status(409).json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
     }
     const newUser = await User.create({
