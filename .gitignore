@@ -30,3 +30,6 @@ HANDOVER.md
 
 # Generated email previews (npm run email:preview)
 backend/email-previews/
+
+# Generated email logo copies (emailService boot)
+backend/src/assets/email/

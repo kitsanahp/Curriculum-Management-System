@@ -9,6 +9,11 @@ require('dns').setDefaultResultOrder('ipv4first');
 
 const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
 
+// ── Transport switch: Brevo HTTP API ─────────────────────────────────────────
+// บาง host (เช่น Railway) บล็อก outbound SMTP ทุกพอร์ต → ตั้ง BREVO_API_KEY ใน env
+// เพื่อส่งเมลผ่าน HTTPS แทน; ลบ key ออกเมื่อย้ายไป host ที่ SMTP ใช้ได้ (กลับมาใช้ SMTP อัตโนมัติ)
+const BREVO_API_KEY = process.env.BREVO_API_KEY && process.env.BREVO_API_KEY.trim();
+
 // ค่าทั้งหมดอ่านจาก .env — ห้าม hardcode credential ในโค้ด (กันรั่วผ่าน git/source map)
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'sandbox.smtp.mailtrap.io',
@@ -32,7 +37,7 @@ const APP_URL = process.env.APP_URL || 'http://localhost:5000';
 
 exports.SYSTEM_EMAIL = SYSTEM_EMAIL;
 
-// CID inline attachments — logos
+// CID inline attachments — logos (โหมด SMTP) + ไฟล์ย่อสำหรับโหมด API (อ้างเป็น URL)
 let LOGO_ATTACHMENTS = [];
 
 (async () => {
@@ -49,17 +54,27 @@ let LOGO_ATTACHMENTS = [];
       { filename: 'nu_logo.png',  content: nuBuf,  cid: 'logo_nu',  contentDisposition: 'inline' },
       { filename: 'sci_logo.png', content: sciBuf, cid: 'logo_sci', contentDisposition: 'inline' },
     ];
-    console.log('[Email] Logos ready (CID inline)');
+    // โหมด API แนบไฟล์ inline ไม่ได้ → วางโลโก้ขนาดย่อไว้ใน src/assets/email
+    // ซึ่งถูกเสิร์ฟ public ผ่าน /assets อยู่แล้ว (app.js) แล้วอ้างจากเมลเป็น URL เต็ม
+    const emailAssetDir = path.join(__dirname, '../assets/email');
+    fs.mkdirSync(emailAssetDir, { recursive: true });
+    fs.writeFileSync(path.join(emailAssetDir, 'logo-nu.png'), nuBuf);
+    fs.writeFileSync(path.join(emailAssetDir, 'logo-sci.png'), sciBuf);
+    console.log('[Email] Logos ready (CID inline + hosted copies)');
   } catch (err) {
     console.warn('[Email] Logo load failed (logos will be hidden):', err.message);
   }
 })();
 
-transporter.verify().then(() => {
-  console.log(`[Email] SMTP connection OK — ${process.env.SMTP_HOST || 'sandbox.smtp.mailtrap.io'}:${process.env.SMTP_PORT || 2525}`);
-}).catch(err => {
-  console.error('[Email] SMTP connection FAILED:', err.message);
-});
+if (BREVO_API_KEY) {
+  console.log('[Email] ใช้ Brevo HTTP API (ข้าม SMTP — host นี้บล็อกพอร์ตเมล)');
+} else {
+  transporter.verify().then(() => {
+    console.log(`[Email] SMTP connection OK — ${process.env.SMTP_HOST || 'sandbox.smtp.mailtrap.io'}:${process.env.SMTP_PORT || 2525}`);
+  }).catch(err => {
+    console.error('[Email] SMTP connection FAILED:', err.message);
+  });
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -370,15 +385,46 @@ const pGreeting = (text) => `<p style="margin:0 0 16px;font-size:16px;font-weigh
 
 // ─── Core send ────────────────────────────────────────────────────────────────
 
+// ชื่อผู้ส่ง (display name) — ดึงจาก EMAIL_FROM รูปแบบ "ชื่อ" <email>
+const FROM_NAME = (FROM.match(/^"?([^"<]+?)"?\s*</) || [])[1]?.trim()
+  || 'ระบบบริหารจัดการหลักสูตร คณะวิทยาศาสตร์';
+
+const sendViaBrevo = async (emails, subject, html) => {
+  // โหมด API: เปลี่ยนโลโก้จาก CID attachment เป็นรูป hosted บนเว็บเราเอง
+  const htmlContent = html
+    .replace(/cid:logo_nu/g, `${APP_URL}/assets/email/logo-nu.png`)
+    .replace(/cid:logo_sci/g, `${APP_URL}/assets/email/logo-sci.png`);
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': BREVO_API_KEY, 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({
+      sender: { name: FROM_NAME, email: SYSTEM_EMAIL },
+      to: emails.map((email) => ({ email })),
+      subject,
+      htmlContent,
+    }),
+  });
+  if (!res.ok) throw new Error(`Brevo API ${res.status}: ${await res.text()}`);
+};
+
 const send = async (to, subject, html, extraAttachments = []) => {
   const original = Array.isArray(to) ? to.join(', ') : to;
   // Dev safety: ถ้าตั้ง EMAIL_TEST_TO ไว้ เมลทุกฉบับจะ redirect มาที่ address เดียว
   // กันยิงเมลจริงไปหาผู้รับจริงตอนทดสอบ — ลบ/เว้นว่าง EMAIL_TEST_TO ตอน production
   const testTo = process.env.EMAIL_TEST_TO && process.env.EMAIL_TEST_TO.trim();
+  const finalSubject = testTo ? `[TEST→${original}] ${subject}` : subject;
+
+  if (BREVO_API_KEY) {
+    const emails = testTo
+      ? [testTo]
+      : (Array.isArray(to) ? to : String(to).split(',').map((s) => s.trim())).filter(Boolean);
+    return sendViaBrevo(emails, finalSubject, html);
+  }
+
   await transporter.sendMail({
     from: FROM,
     to: testTo || original,
-    subject: testTo ? `[TEST→${original}] ${subject}` : subject,
+    subject: finalSubject,
     html,
     attachments: [...LOGO_ATTACHMENTS, ...extraAttachments],
   });
@@ -582,6 +628,8 @@ exports.sendDeadlineReminder = (emails, curriculum, daysLeft) => {
 
 const prepareAnnouncementImage = async (imageUrl) => {
   if (!imageUrl || imageUrl.startsWith('http')) return { imageSrc: imageUrl, attachment: null };
+  // โหมด API แนบรูป inline ไม่ได้ → อ้างรูปจากเว็บเราตรง ๆ (/uploads/announcements เปิด public)
+  if (BREVO_API_KEY) return { imageSrc: `${APP_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`, attachment: null };
   const filePath = path.join(__dirname, '../..', imageUrl);
   if (!fs.existsSync(filePath)) return { imageSrc: null, attachment: null };
   try {
