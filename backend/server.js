@@ -5,6 +5,7 @@ const { sequelize } = require('./src/models');
 const { startReminderScheduler } = require('./src/services/reminderScheduler');
 const { seedRelatedSystems } = require('./seeders/relatedSystems');
 const { seedDegreeTitles } = require('./seeders/degreeTitles');
+const { seedDepartments } = require('./seeders/departments');
 const { seedMajors } = require('./seeders/majors');
 
 const PORT = process.env.PORT || 5000;
@@ -128,6 +129,9 @@ async function startServer() {
 
     // seed ชื่อวุฒิเริ่มต้น (idempotent — seed เฉพาะตอนตารางว่าง)
     await seedDegreeTitles();
+
+    // seed ภาควิชาเริ่มต้น (idempotent) — ต้องมาก่อน seedMajors เพราะสาขาผูกกับภาควิชา
+    await seedDepartments();
 
     // seed สาขาวิชาเริ่มต้นจากชุดเดิมใน frontend (idempotent — seed เฉพาะตอนตารางว่าง)
     await seedMajors();
