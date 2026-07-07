@@ -17,6 +17,7 @@ const Resource = require('./Resource');
 const CalendarEvent = require('./CalendarEvent');
 const DegreeTitle = require('./DegreeTitle');
 const Major = require('./Major');
+const EmailLog = require('./EmailLog');
 
 // Department <-> User
 Department.hasMany(User, { foreignKey: 'department_id', as: 'users' });
@@ -120,5 +121,6 @@ module.exports = {
   Resource,
   CalendarEvent,
   DegreeTitle,
-  Major
+  Major,
+  EmailLog
 };

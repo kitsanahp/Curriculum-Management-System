@@ -2,6 +2,8 @@ const nodemailer = require('nodemailer');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+// require ตรงตัวไม่ผ่าน models/index กัน circular dependency (service นี้ถูก require จากแทบทุก controller)
+const EmailLog = require('../models/EmailLog');
 
 // Node 17+ เรียง DNS แบบ IPv6 ก่อน — บนคลาวด์บางเจ้า (เช่น Railway) เส้น IPv6 ไป
 // SMTP ค้างจน Connection timeout ทั้งที่ IPv4 ปกติ → บังคับใช้ IPv4 ก่อนเสมอ
@@ -430,6 +432,15 @@ const send = async (to, subject, html, extraAttachments = []) => {
         attachments: [...LOGO_ATTACHMENTS, ...extraAttachments],
       });
 
+  // บันทึกผลรายฉบับลง email_logs — fire-and-forget การ log พังห้ามกระทบการส่งเมล
+  const logEmail = (recipient, status, error) =>
+    EmailLog.create({
+      recipient,
+      subject: finalSubject.slice(0, 500),
+      status,
+      error: error ? String(error).slice(0, 2000) : null,
+    }).catch(() => {});
+
   // ทีละชุดเล็ก ๆ กันชน rate limit ของ Brevo/Gmail เวลาประกาศถึงผู้ใช้จำนวนมาก
   const BATCH = 8;
   const failures = [];
@@ -437,7 +448,12 @@ const send = async (to, subject, html, extraAttachments = []) => {
     const batch = recipients.slice(i, i + BATCH);
     const results = await Promise.allSettled(batch.map(sendOne));
     results.forEach((r, j) => {
-      if (r.status === 'rejected') failures.push(`${batch[j]} (${r.reason?.message || r.reason})`);
+      if (r.status === 'rejected') {
+        failures.push(`${batch[j]} (${r.reason?.message || r.reason})`);
+        logEmail(batch[j], 'failed', r.reason?.message || r.reason);
+      } else {
+        logEmail(batch[j], 'sent');
+      }
     });
   }
   if (failures.length > 0) {

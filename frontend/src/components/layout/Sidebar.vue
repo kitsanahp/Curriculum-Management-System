@@ -91,7 +91,7 @@ import {
   PhHouse, PhFileText, PhMegaphone,
   PhUsers, PhSignOut, PhFolderOpen, PhCaretLeft,
   PhArchive, PhHighlighter, PhCaretDown, PhCaretDoubleLeft,
-  PhBuildings,
+  PhBuildings, PhEnvelopeSimple,
 } from '@phosphor-icons/vue';
 
 defineProps({ collapsed: Boolean });
@@ -116,6 +116,7 @@ const ADMIN_ITEMS = [
   { to: '/users',              label: 'บัญชีผู้ใช้',         icon: PhUsers,     roles: ['admin'] },
   { to: '/master-data',        label: 'ภาควิชาและชื่อวุฒิ', icon: PhBuildings, roles: ['admin'] },
   { to: '/curricula/archived', label: 'ประวัติการยกเลิก',   icon: PhArchive,   roles: ['admin'] },
+  { to: '/email-logs',         label: 'การส่งอีเมล',        icon: PhEnvelopeSimple, roles: ['admin'] },
 ];
 
 const filterByRole = (items) => {

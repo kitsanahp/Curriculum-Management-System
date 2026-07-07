@@ -160,6 +160,12 @@ const routes = [
         meta: { roles: ['admin'] }
       },
       {
+        path: 'email-logs',
+        name: 'EmailLogs',
+        component: () => import('@/views/admin/EmailLogsView.vue'),
+        meta: { roles: ['admin'] }
+      },
+      {
         path: 'curricula/:id/decision/:stepId',
         name: 'CommitteeDecision',
         component: () => import('@/views/curriculum/CommitteeDecisionView.vue'),
