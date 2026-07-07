@@ -393,16 +393,8 @@ const nextStepBanner = (nextCommitteeName) => {
 const pStyle = `margin:0 0 24px;font-size:15px;color:#4b5563;line-height:1.8;`;
 const pGreeting = (text) => `<p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#111827;">${esc(text)}</p>`;
 
-// กล่องแสดง "ข้อเสนอแนะ/เหตุผลการตีกลับ" — เดิมรับ note มาแต่ไม่เคยแสดงในเมลเลย
-// ผู้รับต้องเดาเองว่าแก้อะไร ตอนนี้แนบเหตุผลลงเมลด้วย (escape กัน HTML injection)
-const noteBlock = (note) => {
-  if (!note || !String(note).trim()) return '';
-  return `
-  <div style="margin:0 0 20px;padding:14px 18px;border-radius:8px;background-color:#fff7ed;border:1px solid #fed7aa;">
-    <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#c2410c;">ข้อเสนอแนะจากผู้ตรวจ</p>
-    <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;white-space:pre-wrap;">${esc(note)}</p>
-  </div>`;
-};
+// หมายเหตุ: เมลตีกลับ "ไม่แสดง" ข้อเสนอแนะ (note) โดยตั้งใจ — เมลมีหน้าที่แจ้งเหตุการณ์
+// เท่านั้น รายละเอียดให้ผู้ใช้เข้าไปดูในระบบ (ตัดสินใจโดยเจ้าของระบบ 8 ก.ค. 2569)
 
 // ─── Core send ────────────────────────────────────────────────────────────────
 
@@ -548,7 +540,6 @@ exports.sendRevisionRequired = (emails, curriculum, note, revisionDeadline) => {
     `${heroSection('ส่งกลับแก้ไข', 'มีบางส่วนที่ต้องปรับแก้ก่อนดำเนินการต่อ', 'revision')}
      ${pGreeting("เรียน คณะผู้รับผิดชอบหลักสูตร")}
      <p style="${pStyle}">ตรวจสอบเอกสารแล้ว พบว่ายังมีส่วนที่ต้องแก้ไข กรุณาแก้ไขและส่งกลับเข้าระบบภายในกำหนด</p>
-     ${noteBlock(note)}
      ${curriculumBlock({ ...(curriculum.toJSON ? curriculum.toJSON() : curriculum), deadline: revisionDeadline || curriculum.deadline })}
      ${ctaButton(`${APP_URL}/curricula`, 'เข้าสู่ระบบเพื่อแก้ไขเอกสาร')}`
   );
@@ -564,7 +555,6 @@ exports.sendCommitteeRevision = (emails, curriculum, committeeName, note, revisi
     `${heroSection('มติคณะกรรมการ', `${committeeName} มีมติให้แก้ไข`, 'committeeRevision')}
      ${pGreeting("เรียน คณะผู้รับผิดชอบหลักสูตร")}
      <p style="${pStyle}">โปรดแก้ไขเอกสารตามมติคณะกรรมการให้เรียบร้อย แล้วส่งกลับเข้าระบบภายในกำหนด คณะกรรมการชุดเดิมจะพิจารณาต่อ</p>
-     ${noteBlock(note)}
      ${curriculumBlock({ ...(curriculum.toJSON ? curriculum.toJSON() : curriculum), deadline: revisionDeadline || curriculum.deadline })}
      ${ctaButton(`${APP_URL}/curricula`, 'เข้าสู่ระบบเพื่อแก้ไขเอกสาร')}`
   );
