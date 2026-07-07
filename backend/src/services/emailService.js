@@ -114,6 +114,12 @@ const formatThaiDateShort = () => {
 
 const curriculumName = (c) => c.field_of_study ? `สาขาวิชา${c.field_of_study}` : c.degree_name || '—';
 
+// escape ค่าจากผู้ใช้ก่อนฝังลง HTML ของอีเมล — กัน HTML injection
+// (ชื่อ/ตำแหน่งจากฟอร์มสมัคร (public!) และเนื้อหาประกาศ ถ้าฝังดิบจะกลายเป็นแท็กจริงใน mail client)
+const esc = (v) => String(v ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const daysLeft = (deadline) => {
   if (!deadline) return null;
   const d = Math.ceil((new Date(deadline) - new Date()) / 86400000);
@@ -209,27 +215,28 @@ const emailFooter = () => `
 
 const heroSection = (category, headline, themeName) => {
   const t = themeOf(themeName);
+  // category/headline อาจมีข้อความจากผู้ใช้ปนอยู่ (ชื่อประกาศ, ชื่อภาควิชา) — escape เสมอ
   return `
   <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 16px;">
     <tr>
       <td style="background-color:${t.soft};border-radius:999px;padding:7px 15px;">
-        <span style="display:inline-block;vertical-align:middle;margin-right:7px;line-height:0;">${badgeIcon(themeName)}</span><span style="font-size:12px;font-weight:700;color:${t.label};vertical-align:middle;">${category}</span>
+        <span style="display:inline-block;vertical-align:middle;margin-right:7px;line-height:0;">${badgeIcon(themeName)}</span><span style="font-size:12px;font-weight:700;color:${t.label};vertical-align:middle;">${esc(category)}</span>
       </td>
     </tr>
   </table>
-  <h1 class="sm-h1" style="margin: 0 0 28px; font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1.45;">${headline}</h1>`;
+  <h1 class="sm-h1" style="margin: 0 0 28px; font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1.45;">${esc(headline)}</h1>`;
 };
 
 const curriculumBlock = (c, { showDeadline = true } = {}) => {
   const days = daysLeft(c.deadline);
-  const name = curriculumName(c);
-  const abbr = c.degree_name_abbr ? ` (${c.degree_name_abbr})` : '';
+  const name = esc(curriculumName(c));
+  const abbr = c.degree_name_abbr ? ` (${esc(c.degree_name_abbr)})` : '';
   const level = DEGREE_LEVEL_TH[c.degree_level] || c.degree_level || '';
   const type  = CURRICULUM_TYPE_TH[c.curriculum_type] || c.curriculum_type || '';
   const year  = c.curriculum_year ? `ปีการศึกษา ${c.curriculum_year}` : '';
 
   const tags = [level, type, year].filter(Boolean).map(t =>
-    `<span style="display:inline-block;padding:6px 14px;background-color:#f8fafc;color:#475569;font-size:13px;font-weight:600;border:1px solid #e2e8f0;border-radius:999px;margin-right:8px;margin-bottom:8px;">${t}</span>`
+    `<span style="display:inline-block;padding:6px 14px;background-color:#f8fafc;color:#475569;font-size:13px;font-weight:600;border:1px solid #e2e8f0;border-radius:999px;margin-right:8px;margin-bottom:8px;">${esc(t)}</span>`
   ).join('');
 
   let deadlineSection = '';
@@ -272,7 +279,7 @@ const ctaButton = (url, label) => `
   <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:36px 0 8px;">
     <tr>
       <td align="center">
-        <a href="${url}" class="sm-cta"
+        <a href="${esc(url)}" class="sm-cta"
           style="display:inline-block;background-color:#F59E0B;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:15px 46px;border-radius:10px;box-shadow:0 2px 4px rgba(15,23,42,0.12);"
           target="_blank">${label}</a>
       </td>
@@ -340,11 +347,12 @@ const baseTemplate = (themeName, bodyHtml) => {
 };
 
 const userBlock = (user, departmentName) => {
+  // ทุก field มาจากฟอร์มสมัครสมาชิกซึ่งเป็น public — escape ก่อนฝังเสมอ
   const lines = [
-    `<p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#111827;">${user.name}</p>`,
-    `<p style="margin:0 0 4px;font-size:14px;color:#6b7280;">${user.email}</p>`,
-    `<p style="margin:0 0 4px;font-size:14px;color:#6b7280;">${ROLE_LABEL_TH[user.role] || user.role}${user.position ? `  ${user.position}` : ''}</p>`,
-    departmentName ? `<p style="margin:0 0 4px;font-size:14px;color:#6b7280;">${departmentName}</p>` : '',
+    `<p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#111827;">${esc(user.name)}</p>`,
+    `<p style="margin:0 0 4px;font-size:14px;color:#6b7280;">${esc(user.email)}</p>`,
+    `<p style="margin:0 0 4px;font-size:14px;color:#6b7280;">${ROLE_LABEL_TH[user.role] || esc(user.role)}${user.position ? `  ${esc(user.position)}` : ''}</p>`,
+    departmentName ? `<p style="margin:0 0 4px;font-size:14px;color:#6b7280;">${esc(departmentName)}</p>` : '',
     `<p style="margin:12px 0 0;font-size:12px;color:#9ca3af;">ลงทะเบียน ${formatThaiDateFull(new Date())}</p>`,
   ].filter(Boolean).join('');
 
@@ -383,7 +391,18 @@ const nextStepBanner = (nextCommitteeName) => {
 
 // Paragraph style used in functions
 const pStyle = `margin:0 0 24px;font-size:15px;color:#4b5563;line-height:1.8;`;
-const pGreeting = (text) => `<p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#111827;">${text}</p>`;
+const pGreeting = (text) => `<p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#111827;">${esc(text)}</p>`;
+
+// กล่องแสดง "ข้อเสนอแนะ/เหตุผลการตีกลับ" — เดิมรับ note มาแต่ไม่เคยแสดงในเมลเลย
+// ผู้รับต้องเดาเองว่าแก้อะไร ตอนนี้แนบเหตุผลลงเมลด้วย (escape กัน HTML injection)
+const noteBlock = (note) => {
+  if (!note || !String(note).trim()) return '';
+  return `
+  <div style="margin:0 0 20px;padding:14px 18px;border-radius:8px;background-color:#fff7ed;border:1px solid #fed7aa;">
+    <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#c2410c;">ข้อเสนอแนะจากผู้ตรวจ</p>
+    <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;white-space:pre-wrap;">${esc(note)}</p>
+  </div>`;
+};
 
 // ─── Core send ────────────────────────────────────────────────────────────────
 
@@ -418,9 +437,12 @@ const send = async (to, subject, html, extraAttachments = []) => {
 
   // ส่งแยกรายคนเสมอ — ห้ามยัดผู้รับหลายคนในฉบับเดียว เพราะทุกคนจะเห็นอีเมล
   // ของกันและกันในช่อง to (privacy) และ log ชี้ตัวได้ว่าส่งถึงใครพลาด
-  const recipients = testTo
+  // กรองค่าที่ไม่ใช่อีเมลทิ้ง — กันเคส to เป็น undefined/null แล้วกลายเป็นผู้รับ "undefined"
+  const recipients = (testTo
     ? [testTo]
-    : [...new Set((Array.isArray(to) ? to : String(to).split(',')).map((s) => String(s).trim()).filter(Boolean))];
+    : [...new Set((Array.isArray(to) ? to : String(to ?? '').split(',')).map((s) => String(s).trim()).filter(Boolean))]
+  ).filter((s) => s.includes('@'));
+  if (recipients.length === 0) return; // ไม่มีผู้รับที่ใช้ได้ — จบเงียบ ๆ เหมือน caller ที่ guard length อยู่แล้ว
 
   const sendOne = (email) => BREVO_API_KEY
     ? sendViaBrevo([email], finalSubject, html)
@@ -495,7 +517,7 @@ exports.sendDepartmentSubmitted = (adminEmails, curriculum, departmentName) => {
   const html = baseTemplate('submitted',
     `${heroSection('หลักสูตรรอตรวจสอบ', `${departmentName || 'ภาควิชา'} ส่งเอกสารเข้าระบบแล้ว`, 'submitted')}
      ${pGreeting("เรียน เจ้าหน้าที่หลักสูตรคณะ")}
-     <p style="${pStyle}"><strong>${departmentName || 'ภาควิชา'}</strong> ส่งเอกสารหลักสูตรเข้าระบบแล้ว กรุณาตรวจสอบและดำเนินการต่อไป</p>
+     <p style="${pStyle}"><strong>${esc(departmentName || 'ภาควิชา')}</strong> ส่งเอกสารหลักสูตรเข้าระบบแล้ว กรุณาตรวจสอบและดำเนินการต่อไป</p>
      ${curriculumBlock(curriculum, { showDeadline: false })}
      ${ctaButton(`${APP_URL}/curricula`, 'เข้าสู่ระบบเพื่อตรวจสอบ')}`
   );
@@ -526,6 +548,7 @@ exports.sendRevisionRequired = (emails, curriculum, note, revisionDeadline) => {
     `${heroSection('ส่งกลับแก้ไข', 'มีบางส่วนที่ต้องปรับแก้ก่อนดำเนินการต่อ', 'revision')}
      ${pGreeting("เรียน คณะผู้รับผิดชอบหลักสูตร")}
      <p style="${pStyle}">ตรวจสอบเอกสารแล้ว พบว่ายังมีส่วนที่ต้องแก้ไข กรุณาแก้ไขและส่งกลับเข้าระบบภายในกำหนด</p>
+     ${noteBlock(note)}
      ${curriculumBlock({ ...(curriculum.toJSON ? curriculum.toJSON() : curriculum), deadline: revisionDeadline || curriculum.deadline })}
      ${ctaButton(`${APP_URL}/curricula`, 'เข้าสู่ระบบเพื่อแก้ไขเอกสาร')}`
   );
@@ -541,6 +564,7 @@ exports.sendCommitteeRevision = (emails, curriculum, committeeName, note, revisi
     `${heroSection('มติคณะกรรมการ', `${committeeName} มีมติให้แก้ไข`, 'committeeRevision')}
      ${pGreeting("เรียน คณะผู้รับผิดชอบหลักสูตร")}
      <p style="${pStyle}">โปรดแก้ไขเอกสารตามมติคณะกรรมการให้เรียบร้อย แล้วส่งกลับเข้าระบบภายในกำหนด คณะกรรมการชุดเดิมจะพิจารณาต่อ</p>
+     ${noteBlock(note)}
      ${curriculumBlock({ ...(curriculum.toJSON ? curriculum.toJSON() : curriculum), deadline: revisionDeadline || curriculum.deadline })}
      ${ctaButton(`${APP_URL}/curricula`, 'เข้าสู่ระบบเพื่อแก้ไขเอกสาร')}`
   );
@@ -683,8 +707,8 @@ exports.sendAnnouncement = async (emails, title, content, linkUrl, imageUrl) => 
 
   const html = baseTemplate('announcement',
     `${heroSection('ประกาศจากคณะวิทยาศาสตร์', title, 'announcement')}
-     ${imageSrc ? `<div style="font-size:0;line-height:0;margin:0 0 20px;overflow:hidden;border-radius:8px;border:1px solid #e5e7eb;"><img src="${imageSrc}" alt="${title}" width="100%" style="width:100%;height:auto;display:block;border-radius:8px;"></div>` : ''}
-     <p style="${pStyle}white-space:pre-wrap;">${content}</p>
+     ${imageSrc ? `<div style="font-size:0;line-height:0;margin:0 0 20px;overflow:hidden;border-radius:8px;border:1px solid #e5e7eb;"><img src="${esc(imageSrc)}" alt="${esc(title)}" width="100%" style="width:100%;height:auto;display:block;border-radius:8px;"></div>` : ''}
+     <p style="${pStyle}white-space:pre-wrap;">${esc(content)}</p>
      ${linkUrl ? ctaButton(linkUrl, 'ดูรายละเอียดเพิ่มเติม') : ''}`
   );
   return send(emails, `[ประกาศ] ${title}`, html, attachment ? [attachment] : []);

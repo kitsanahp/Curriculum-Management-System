@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Curriculum, CurriculumTeam, Notification } = require('../models');
+const { Curriculum, CurriculumTeam, Notification, EmailLog } = require('../models');
 const emailService = require('./emailService');
 const { CURRICULUM_STATUS } = require('../config/constants');
 const { resolveTeamEmails, resolveTeamUserIds } = require('../utils/teamEmailLookup');
@@ -48,10 +48,24 @@ async function checkDeadlines() {
   }
 }
 
+// เก็บกวาด email_logs เก่ากว่า 90 วัน — กันตารางโตไม่มีที่สิ้นสุด
+// (log ใช้มอนิเตอร์ระยะสั้น ไม่ใช่ archive ถาวร)
+const EMAIL_LOG_RETENTION_DAYS = 90;
+async function pruneEmailLogs() {
+  try {
+    const cutoff = new Date(Date.now() - EMAIL_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const removed = await EmailLog.destroy({ where: { created_at: { [Op.lt]: cutoff } } });
+    if (removed) console.log(`[EmailLog] ลบ log เก่ากว่า ${EMAIL_LOG_RETENTION_DAYS} วัน ${removed} รายการ`);
+  } catch (err) {
+    console.error('[EmailLog] prune error:', err.message);
+  }
+}
+
 function startReminderScheduler() {
   // รัน 1 ครั้งทันทีตอน startup แล้วทุก 24 ชั่วโมง
   checkDeadlines();
-  setInterval(checkDeadlines, 24 * 60 * 60 * 1000);
+  pruneEmailLogs();
+  setInterval(() => { checkDeadlines(); pruneEmailLogs(); }, 24 * 60 * 60 * 1000);
   console.log('[Reminder] Deadline reminder scheduler started (interval: 24h)');
 }
 
