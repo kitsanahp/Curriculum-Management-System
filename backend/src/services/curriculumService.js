@@ -322,6 +322,12 @@ async function submitByDepartment(curriculum, actor) {
   if (!allowedStatuses.includes(curriculum.status)) {
     throw new ApiError(409, `ไม่สามารถส่งหลักสูตรที่มีสถานะ "${curriculum.status}" ได้`);
   }
+  // ถูกตีกลับจาก "คณะกรรมการ" (current_committee_step_id ค้างอยู่) ต้องไปทาง resubmit
+  // เท่านั้น — ถ้าปล่อยผ่าน submit ปกติ สถานะจะกลายเป็น department_submitted แล้ว
+  // admin approve จะรีเซ็ตไป step แรก ทำให้เสียตำแหน่ง "เริ่มที่คณะกรรมการชุดที่ตีกลับ"
+  if (curriculum.status === CURRICULUM_STATUS.REVISION && curriculum.current_committee_step_id) {
+    throw new ApiError(409, 'หลักสูตรนี้ถูกตีกลับจากคณะกรรมการ ต้องส่งผ่าน "ส่งให้งานหลักสูตรตรวจสอบ" เพื่อกลับเข้าขั้นตอนเดิม');
+  }
 
   curriculum.status = CURRICULUM_STATUS.DEPARTMENT_SUBMITTED;
   await curriculum.save();

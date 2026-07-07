@@ -164,7 +164,7 @@ exports.upload = async (req, res, next) => {
 exports.deleteDocument = async (req, res, next) => {
   try {
     const doc = await Document.findByPk(req.params.id, {
-      include: [{ model: Curriculum, as: 'curriculum', attributes: ['department_id'] }]
+      include: [{ model: Curriculum, as: 'curriculum', attributes: ['department_id', 'status'] }]
     });
     if (!doc) return res.status(404).json({ success: false, message: 'ไม่พบไฟล์' });
 
@@ -174,6 +174,12 @@ exports.deleteDocument = async (req, res, next) => {
         departmentId: doc.curriculum?.department_id, curriculumId: doc.curriculum_id,
       });
       if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์ลบไฟล์นี้' });
+      // ลบได้เฉพาะช่วงที่ยังแก้ไขได้ (เกตเดียวกับการอัปโหลด) — หลังส่งแล้ว/อยู่ระหว่าง
+      // คณะกรรมการ ห้ามลบ ไม่งั้นเอกสารที่ admin กำลังตรวจหายกลางทาง
+      const FACULTY_DELETABLE = [CURRICULUM_STATUS.PENDING_DEPARTMENT, CURRICULUM_STATUS.REVISION];
+      if (!FACULTY_DELETABLE.includes(doc.curriculum?.status)) {
+        return res.status(403).json({ success: false, message: 'ไม่สามารถลบไฟล์ได้ในขณะนี้ กรุณารอให้เจ้าหน้าที่ดำเนินการก่อน' });
+      }
     }
 
     doc.is_deleted = true;

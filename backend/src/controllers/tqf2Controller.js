@@ -139,6 +139,11 @@ exports.getAll = async (req, res, next) => {
       });
       if (!allowed) return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์' });
     }
+    // registrar เห็นได้เฉพาะหลักสูตรในขอบเขตงานบริการ/ศึกษาทั่วไป — scope เดียวกับ getDocuments
+    if (req.user.role === ROLES.REGISTRAR
+        && !registrarCanAccess(curriculum, await getServiceUnitDeptId())) {
+      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์เข้าถึงหลักสูตรนี้' });
+    }
 
     const where = { curriculum_id, is_deleted: false };
     if (academic_year) where.academic_year = academic_year;
@@ -206,33 +211,48 @@ exports.upload = async (req, res, next) => {
     // auto-fill ปีการศึกษา (พ.ศ.) ถ้าไม่ได้ส่งมา
     const currentAcademicYear = academic_year || (new Date().getFullYear() + 543).toString();
 
-    const latest = await TQF2Document.findOne({
-      where: { curriculum_id, is_deleted: false, file_type: fileType },
-      order: [['version_number', 'DESC']],
-    });
-    const versionNumber = latest ? latest.version_number + 1 : 1;
+    // transaction + row lock กัน race ตอนอัปโหลดพร้อมกัน (version_number ซ้ำ)
+    // และกัน orphan row ถ้า AuditLog เขียนไม่สำเร็จ — ถ้า fail ลบไฟล์ที่ multer เขียนแล้วทิ้ง
+    let doc;
+    try {
+      doc = await sequelize.transaction(async (t) => {
+        const latest = await TQF2Document.findOne({
+          where: { curriculum_id, is_deleted: false, file_type: fileType },
+          order: [['version_number', 'DESC']],
+          transaction: t,
+          lock: t.LOCK.UPDATE,
+        });
+        const versionNumber = latest ? latest.version_number + 1 : 1;
 
-    const doc = await TQF2Document.create({
-      curriculum_id,
-      version_number: versionNumber,
-      stored_name: req.file.filename,
-      original_name: originalName,
-      file_type: fileType,
-      file_size: req.file.size,
-      uploaded_by: req.user.id,
-      note: note || null,
-      academic_year: currentAcademicYear,
-    });
+        const created = await TQF2Document.create({
+          curriculum_id,
+          version_number: versionNumber,
+          stored_name: req.file.filename,
+          original_name: originalName,
+          file_type: fileType,
+          file_size: req.file.size,
+          uploaded_by: req.user.id,
+          note: note || null,
+          academic_year: currentAcademicYear,
+        }, { transaction: t });
 
-    await AuditLog.create({
-      curriculum_id,
-      user_id: req.user.id,
-      action: 'UPLOAD_TQF2',
-      details: { file_name: originalName, version: versionNumber, doc_id: doc.id },
-      ip_address: req.ip,
-    });
+        await AuditLog.create({
+          curriculum_id,
+          user_id: req.user.id,
+          action: 'UPLOAD_TQF2',
+          details: { file_name: originalName, version: versionNumber, doc_id: created.id },
+          ip_address: req.ip,
+        }, { transaction: t });
 
-    res.status(201).json({ success: true, data: doc, message: `อัปโหลด มคอ.2 เวอร์ชัน ${versionNumber} สำเร็จ` });
+        return created;
+      });
+    } catch (error) {
+      const filePath = path.join(__dirname, '../../uploads/tqf2', req.file.filename);
+      fs.unlink(filePath, () => {});
+      throw error;
+    }
+
+    res.status(201).json({ success: true, data: doc, message: `อัปโหลด มคอ.2 เวอร์ชัน ${doc.version_number} สำเร็จ` });
 
     // Pre-extract ใน background หลัง response ส่งแล้ว
     // ทำให้ compare ครั้งแรกเร็วขึ้น เพราะ HTML extraction เสร็จไปแล้ว

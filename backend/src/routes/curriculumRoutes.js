@@ -10,6 +10,11 @@ const { ROLES } = require('../config/constants');
 
 router.use(authenticate);
 
+// executive = view-only Dashboard เท่านั้น (ตามสเปค) — ปัดตกทุก endpoint ใต้ /curricula
+// ที่จุดเดียว กันหลุดรายทาง (เดิม getDocuments/tqf2 getAll ไม่ได้เช็ค executive ทำให้
+// ดูรายชื่อไฟล์ผ่าน API ตรงได้) — dashboard ใช้ /api/dashboard/summary ซึ่งอยู่นอก router นี้
+router.use(authorize(ROLES.ADMIN, ROLES.FACULTY, ROLES.STAFF, ROLES.REGISTRAR));
+
 // Annotations — must come BEFORE /:id or Express will treat 'annotations' as a curriculum id
 router.get('/annotations/summary', annotationCtrl.getSummary);
 router.get('/annotations/counts',  annotationCtrl.getCounts);

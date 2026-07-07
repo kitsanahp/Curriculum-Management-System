@@ -100,6 +100,13 @@ exports.create = async (req, res, next) => {
     const imageFile = req.files?.image?.[0];
     const attachmentFiles = req.files?.attachments || [];
 
+    // validate ก่อนสร้าง — content ว่างจะพังที่ content.substring กลายเป็น 500
+    // และต้องลบไฟล์ที่ multer เขียนไปแล้วทิ้ง กันไฟล์ขยะค้าง
+    if (!title?.trim() || !content?.trim()) {
+      [imageFile, ...attachmentFiles].filter(Boolean).forEach((f) => removeAttachmentFile(f.filename));
+      return res.status(400).json({ success: false, message: 'กรุณาระบุหัวข้อและเนื้อหาประกาศ' });
+    }
+
     let image_url = null;
     if (imageFile) {
       const filePath = path.join(ANNOUNCEMENT_DIR, imageFile.filename);

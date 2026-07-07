@@ -33,7 +33,8 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = (req.body.email || '').trim(); // กัน space ติดมาจาก autofill/copy-paste
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'กรุณากรอกอีเมลและรหัสผ่าน' });
     }
@@ -252,7 +253,8 @@ exports.resetPassword = async (req, res, next) => {
     if (!payload?.id) return res.status(400).json({ success: false, message: 'ลิงก์ไม่ถูกต้อง' });
 
     const user = await User.findByPk(payload.id);
-    if (!user) return res.status(400).json({ success: false, message: 'ลิงก์ไม่ถูกต้อง' });
+    // บัญชีที่ถูกลบ (soft delete) ห้ามตั้งรหัสใหม่ — ลิงก์เก่าที่ค้างอยู่ต้องใช้ไม่ได้
+    if (!user || user.deleted_at) return res.status(400).json({ success: false, message: 'ลิงก์ไม่ถูกต้อง' });
 
     try {
       jwt.verify(token, process.env.JWT_SECRET + user.password);
@@ -270,6 +272,10 @@ exports.resetPassword = async (req, res, next) => {
 exports.changePassword = async (req, res, next) => {
   try {
     const { current_password, new_password } = req.body;
+    // ต้องเช็คก่อนเรียก comparePassword — bcrypt.compare(undefined) โยน error กลายเป็น 500
+    if (!current_password) {
+      return res.status(400).json({ success: false, message: 'กรุณากรอกรหัสผ่านปัจจุบัน' });
+    }
     if (!new_password || new_password.length < 8) {
       return res.status(400).json({ success: false, message: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร' });
     }

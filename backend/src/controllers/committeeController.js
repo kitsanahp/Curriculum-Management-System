@@ -40,6 +40,12 @@ exports.uploadDecision = async (req, res, next) => {
       await t.rollback(); cleanupFiles();
       return res.status(409).json({ success: false, message: `ไม่สามารถบันทึกมติสำหรับหลักสูตรที่มีสถานะ "${curriculum?.status}" ได้` });
     }
+    // บันทึกมติได้เฉพาะ step ที่กำลังพิจารณาอยู่ — กันบันทึกข้าม step (เช่น มติ step 7
+    // ทั้งที่อยู่ step 2 จะทำให้หลักสูตร approved ทันที) จาก UI ค้าง/เรียก API ตรง
+    if (curriculum.current_committee_step_id && curriculum.current_committee_step_id !== step.id) {
+      await t.rollback(); cleanupFiles();
+      return res.status(409).json({ success: false, message: 'บันทึกมติได้เฉพาะขั้นตอนที่กำลังพิจารณาอยู่เท่านั้น' });
+    }
 
     step.status = status;
     if (decision_date) step.decision_date = decision_date;

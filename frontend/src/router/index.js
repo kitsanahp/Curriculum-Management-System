@@ -88,7 +88,8 @@ const routes = [
         path: 'curricula/:id',
         name: 'CurriculumDetail',
         component: () => import('@/views/curriculum/CurriculumDetailView.vue'),
-        meta: { roles: ['admin', 'faculty', 'staff', 'registrar', 'executive'] }
+        // executive = view-only Dashboard เท่านั้น — backend ก็ปัด /api/curricula/* ทุกเส้นแล้ว
+        meta: { roles: ['admin', 'faculty', 'staff', 'registrar'] }
       },
 
       // เมนูอื่น ๆ

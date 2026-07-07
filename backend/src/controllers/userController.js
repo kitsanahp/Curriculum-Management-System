@@ -33,7 +33,17 @@ exports.getAll = async (req, res, next) => {
 exports.create = async (req, res, next) => {
   try {
     const { name, email, password, role, department_id } = req.body;
-    const user = await User.create({ name, email, password, role, department_id });
+    // validate ก่อนถึง User.create — password ว่างจะพังที่ bcrypt hash กลายเป็น 500
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ อีเมล รหัสผ่าน บทบาท)' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' });
+    }
+    if (!Object.values(ROLES).includes(role)) {
+      return res.status(400).json({ success: false, message: 'บทบาทไม่ถูกต้อง' });
+    }
+    const user = await User.create({ name, email, password, role, department_id: department_id || null });
     res.status(201).json({ success: true, data: user, message: 'สร้างผู้ใช้สำเร็จ' });
   } catch (error) { next(error); }
 };
@@ -69,7 +79,8 @@ exports.update = async (req, res, next) => {
 exports.sendPasswordReset = async (req, res, next) => {
   try {
     const user = await User.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้' });
+    // บัญชีที่ถูกลบ (soft delete) ไม่ควรได้ลิงก์ตั้งรหัสใหม่
+    if (!user || user.deleted_at) return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้' });
     if (!user.email) return res.status(400).json({ success: false, message: 'ผู้ใช้นี้ไม่มีอีเมล จึงส่งลิงก์ไม่ได้' });
 
     const secret = process.env.JWT_SECRET + user.password;

@@ -51,10 +51,13 @@ export function formatThaiDateNumeric(date) {
   return `${day}/${mon}/${d.getFullYear() + 543}`;
 }
 
-/** Is the date before today? */
+/** Is the date before today? (เทียบระดับ "วัน" — วันครบกำหนดวันนี้ยังไม่ถือว่าเกิน) */
 export function isOverdue(date) {
   const d = _parse(date);
   if (!d) return false;
-  return d < new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return d < today;
 }
 
