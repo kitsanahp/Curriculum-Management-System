@@ -1,18 +1,19 @@
 <template>
+  <!-- Reminder badge: white + amber outline so it reads as a notice, not a workflow status pill -->
   <span v-if="cycle?.isDue"
     :class="[
       'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border select-none',
-      'bg-amber-50 text-amber-700 border-amber-200',
+      'bg-white text-amber-700 border-amber-300',
     ]"
     :data-tooltip="tooltip" data-tooltip-bottom>
-    <PhArrowsClockwise class="w-3.5 h-3.5 shrink-0 opacity-70" weight="bold" />
+    <PhClockCountdown class="w-3.5 h-3.5 shrink-0 opacity-70" weight="bold" />
     ถึงเวลาปรับวงรอบ
   </span>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { PhArrowsClockwise } from '@phosphor-icons/vue';
+import { PhClockCountdown } from '@phosphor-icons/vue';
 import { getRevisionCycle } from '@/utils/curriculum';
 
 const props = defineProps({
