@@ -270,7 +270,8 @@ async function createCurriculum(body, actor) {
   });
 
   // อีเมลส่งหลัง commit (side effect — ไม่อยู่ใน transaction)
-  const allEmails = await resolveTeamEmails(team || [], actor.email ? [actor.email] : []);
+  // แจ้งเฉพาะทีมหลักสูตร — actor คือ admin ผู้ตรวจ ไม่ต้องได้สำเนาของตัวเอง
+  const allEmails = await resolveTeamEmails(team || []);
   if (allEmails.length > 0) {
     fireEmail('sendCurriculumCreated', emailService.sendCurriculumCreated(allEmails, created));
   }
