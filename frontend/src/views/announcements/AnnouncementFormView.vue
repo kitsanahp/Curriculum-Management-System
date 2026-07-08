@@ -170,7 +170,7 @@
       <!-- Action buttons -->
       <div class="flex items-center justify-end gap-3 pb-8">
         <button type="button" @click="goBack"
-          class="cursor-pointer px-5 py-3 text-sm font-semibold text-gray-600 hover:text-gray-900 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 active:scale-[0.97] transition-all duration-150 ease-ios">
+          class="cursor-pointer px-5 py-3 text-sm font-bold text-red-500 bg-white border-2 border-red-400 rounded-xl hover:bg-red-50 hover:border-red-500 shadow-2xs active:scale-[0.97] transition-all duration-150 ease-ios">
           ยกเลิก
         </button>
         <button type="submit" :disabled="loading"
