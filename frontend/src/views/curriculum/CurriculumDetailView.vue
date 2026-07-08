@@ -116,9 +116,9 @@
 
         <!-- Buttons -->
         <div class="flex items-center justify-end gap-3 flex-wrap sm:flex-nowrap shrink-0">
-          <!-- Faculty ส่งหลักสูตรครั้งแรก / Admin ส่งแทนภาควิชา -->
+          <!-- Faculty: ส่งหลักสูตรครั้งแรก / หลังงานหลักสูตรตีกลับ -->
           <span
-            v-if="(authStore.isFaculty || authStore.isAdmin) && (c.status === 'pending_department' || (c.status === 'revision' && !c.current_committee_step_id))"
+            v-if="authStore.isFaculty && (c.status === 'pending_department' || (c.status === 'revision' && !c.current_committee_step_id))"
             :data-tooltip="!hasDocuments ? 'กรุณาอัปโหลดเอกสารก่อนส่งหลักสูตร' : undefined"
             data-tooltip-left>
             <button
@@ -130,9 +130,9 @@
             </button>
           </span>
 
-          <!-- Faculty ส่งคืนหลังคณะกรรมการตีกลับ / Admin ส่งแทนภาควิชา -->
+          <!-- Faculty: ส่งคืนหลังคณะกรรมการตีกลับ -->
           <span
-            v-if="(authStore.isFaculty || authStore.isAdmin) && c.status === 'revision' && c.current_committee_step_id"
+            v-if="authStore.isFaculty && c.status === 'revision' && c.current_committee_step_id"
             :data-tooltip="!hasDocuments ? 'กรุณาอัปโหลดเอกสารก่อนส่งหลักสูตร' : undefined"
             data-tooltip-left>
             <button
@@ -140,9 +140,33 @@
               @click="handleResubmit"
               class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhPaperPlaneTilt class="w-4 h-4" weight="bold" aria-hidden="true" />
-              {{ authStore.isAdmin ? 'ส่งกลับเข้าขั้นตอนการพิจารณา' : 'ส่งให้งานหลักสูตรตรวจสอบ' }}
+              ส่งให้งานหลักสูตรตรวจสอบ
             </button>
           </span>
+
+          <!-- Admin: นำเข้าที่ประชุมได้เลยช่วงรอภาควิชา (fast-track — backend บันทึกขั้นส่งให้ครบเอง) -->
+          <span
+            v-if="authStore.isAdmin && (c.status === 'pending_department' || (c.status === 'revision' && !c.current_committee_step_id))"
+            :data-tooltip="!hasDocuments ? 'กรุณาอัปโหลดเอกสารก่อนนำเข้าที่ประชุม' : undefined"
+            data-tooltip-left>
+            <button
+              :disabled="submitting || !hasDocuments"
+              @click="handleApprove"
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              <PhCheck class="w-4 h-4" weight="bold" aria-hidden="true" />
+              นำเข้าที่ประชุมคณะกรรมการ
+            </button>
+          </span>
+
+          <!-- Admin: ส่งคืนคณะกรรมการชุดเดิมได้เลยช่วงรอภาควิชาแก้ตามมติ -->
+          <button
+            v-if="authStore.isAdmin && c.status === 'revision' && c.current_committee_step_id"
+            :disabled="submitting"
+            @click="handleApproveRecheck"
+            class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+            <PhCheck class="w-4 h-4" weight="bold" aria-hidden="true" />
+            ส่งคืนคณะกรรมการ
+          </button>
 
           <!-- Admin: ตรวจสอบครั้งแรก (department_submitted) -->
           <template v-if="authStore.isAdmin && c.status === 'department_submitted'">
@@ -1166,11 +1190,11 @@ const actionContext = computed(() => {
     if (status === 'pending_admin_recheck')
       return { title: 'ตรวจสอบเอกสารที่ปรับแก้', hint: 'โปรดตรวจสอบเอกสารที่ภาควิชาปรับแก้เพิ่มเติม และพิจารณาดำเนินการในขั้นตอนต่อไป' };
     if (status === 'pending_department')
-      return { title: 'รอภาควิชาดำเนินการ', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถอัปโหลดเอกสารและนำส่งหลักสูตรเพื่อดำเนินการในขั้นตอนต่อไปได้' };
+      return { title: 'รอภาควิชาดำเนินการ', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถอัปโหลดเอกสารและนำหลักสูตรเข้าสู่การพิจารณาของคณะกรรมการได้' };
     if (status === 'revision' && !c.value.current_committee_step_id)
-      return { title: 'รอภาควิชาปรับแก้เอกสาร', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถปรับแก้เอกสารและนำส่งหลักสูตรเพื่อดำเนินการในขั้นตอนต่อไปได้' };
+      return { title: 'รอภาควิชาปรับแก้เอกสาร', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถปรับแก้เอกสารและนำหลักสูตรเข้าสู่การพิจารณาของคณะกรรมการได้' };
     if (status === 'revision' && c.value.current_committee_step_id)
-      return { title: 'รอภาควิชาปรับแก้ตามมติคณะกรรมการ', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถปรับแก้เอกสารและนำส่งหลักสูตรกลับเข้าสู่ขั้นตอนการพิจารณาเดิมได้' };
+      return { title: 'รอภาควิชาปรับแก้ตามมติคณะกรรมการ', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถปรับแก้เอกสารและส่งหลักสูตรคืนคณะกรรมการชุดเดิมได้' };
   }
   return null;
 });
@@ -1192,12 +1216,9 @@ watch(activeTab, (tab) => {
 const submitting = ref(false);
 
 const handleSubmit = async () => {
-  const byAdmin = authStore.isAdmin;
   const ok = await confirm({
     title: 'ส่งหลักสูตรเพื่อตรวจสอบ',
-    message: byAdmin
-      ? 'ระบบจะนำส่งหลักสูตรเข้าสู่ขั้นตอนการตรวจสอบ และแจ้งให้ทีมหลักสูตรทราบ'
-      : 'ระบบจะนำส่งหลักสูตรให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบต่อไป',
+    message: 'ระบบจะนำส่งหลักสูตรให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบต่อไป',
     confirmLabel: 'ส่งหลักสูตร',
     type: 'primary',
   });
@@ -1206,7 +1227,7 @@ const handleSubmit = async () => {
   try {
     await curriculumStore.submitByDepartment(route.params.id);
     loadHistory();
-    toast.success('ส่งหลักสูตรเรียบร้อยแล้ว', byAdmin ? 'แจ้งทีมหลักสูตรให้ทราบแล้ว' : 'รอเจ้าหน้าที่ตรวจสอบ');
+    toast.success('ส่งหลักสูตรเรียบร้อยแล้ว', 'รอเจ้าหน้าที่ตรวจสอบ');
   } catch {
     toast.error('ส่งหลักสูตรไม่สำเร็จ', 'กรุณาลองใหม่อีกครั้ง');
   } finally { submitting.value = false; }
@@ -1248,13 +1269,10 @@ const handleReject = async () => {
 
 const handleResubmit = async () => {
   if (submitting.value) return;
-  const byAdmin = authStore.isAdmin;
   const ok = await confirm({
-    title: byAdmin ? 'ส่งกลับเข้าขั้นตอนการพิจารณา' : 'ส่งให้งานหลักสูตรตรวจสอบ',
-    message: byAdmin
-      ? 'ระบบจะนำส่งหลักสูตรกลับเข้าสู่ขั้นตอนการพิจารณา และแจ้งให้ทีมหลักสูตรทราบ'
-      : 'ระบบจะส่งหลักสูตรกลับให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบอีกครั้ง',
-    confirmLabel: byAdmin ? 'ยืนยันการส่ง' : 'ส่งให้ตรวจสอบ',
+    title: 'ส่งให้งานหลักสูตรตรวจสอบ',
+    message: 'ระบบจะส่งหลักสูตรกลับให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบอีกครั้ง',
+    confirmLabel: 'ส่งให้ตรวจสอบ',
     type: 'primary',
   });
   if (!ok) return;
@@ -1262,7 +1280,7 @@ const handleResubmit = async () => {
   try {
     await curriculumStore.resubmitAfterRevision(route.params.id);
     loadHistory();
-    toast.success('ส่งหลักสูตรเรียบร้อยแล้ว', byAdmin ? 'แจ้งทีมหลักสูตรให้ทราบแล้ว' : undefined);
+    toast.success('ส่งให้งานหลักสูตรตรวจสอบเรียบร้อยแล้ว');
   } catch {
     toast.error('ส่งไม่สำเร็จ', 'กรุณาลองใหม่อีกครั้ง');
   } finally { submitting.value = false; }

@@ -403,9 +403,22 @@ async function rejectByAdmin(curriculum, { note, revision_deadline }, actor) {
 }
 
 // admin อนุมัติ → เข้าสู่คณะกรรมการขั้นแรก (เรียง step ใน JS กัน array order ไม่ชัวร์)
+// รองรับ fast-track: admin เตรียมเอกสารเองช่วงรอภาควิชา แล้วนำเข้าที่ประชุมได้ในคลิกเดียว
+// (บันทึกเหตุการณ์ส่งหลักสูตรลงประวัติก่อน เพื่อให้ audit trail ครบทุกขั้นเหมือน flow ปกติ)
 async function approveByAdmin(curriculum, actor) {
-  if (curriculum.status !== CURRICULUM_STATUS.DEPARTMENT_SUBMITTED) {
+  const fastTrack = [CURRICULUM_STATUS.PENDING_DEPARTMENT, CURRICULUM_STATUS.REVISION].includes(curriculum.status);
+  if (fastTrack && curriculum.status === CURRICULUM_STATUS.REVISION && curriculum.current_committee_step_id) {
+    throw new ApiError(409, 'หลักสูตรนี้ถูกตีกลับจากคณะกรรมการ ต้องส่งคืนผ่าน "ส่งคืนคณะกรรมการ" เพื่อกลับเข้าขั้นตอนเดิม');
+  }
+  if (!fastTrack && curriculum.status !== CURRICULUM_STATUS.DEPARTMENT_SUBMITTED) {
     throw new ApiError(409, `ไม่สามารถอนุมัติหลักสูตรที่มีสถานะ "${curriculum.status}" ได้`);
+  }
+
+  if (fastTrack) {
+    await writeAudit({
+      curriculumId: curriculum.id, actor, action: 'DEPARTMENT_SUBMIT',
+      details: { on_behalf: true },
+    });
   }
 
   const sortedSteps = [...(curriculum.committee_steps || [])].sort((a, b) => a.step_order - b.step_order);
@@ -428,9 +441,18 @@ async function approveByAdmin(curriculum, actor) {
 }
 
 // admin ผ่านการตรวจสอบหลังแก้ไข → resume คณะกรรมการชุดที่ตีกลับ (หรือ step แรกถ้าตีกลับจาก submitted)
+// รองรับ fast-track: admin ปรับแก้เอกสารเองช่วงคณะกรรมการตีกลับ แล้วส่งคืนได้ในคลิกเดียว
 async function approveRecheck(curriculum, actor) {
-  if (curriculum.status !== CURRICULUM_STATUS.PENDING_ADMIN_RECHECK) {
+  const fastTrack = curriculum.status === CURRICULUM_STATUS.REVISION && !!curriculum.current_committee_step_id;
+  if (!fastTrack && curriculum.status !== CURRICULUM_STATUS.PENDING_ADMIN_RECHECK) {
     throw new ApiError(409, `ไม่สามารถดำเนินการได้ (สถานะปัจจุบัน: ${curriculum.status})`);
+  }
+
+  if (fastTrack) {
+    await writeAudit({
+      curriculumId: curriculum.id, actor, action: 'RESUBMIT_AFTER_REVISION',
+      details: { resume_step_id: curriculum.current_committee_step_id, on_behalf: true },
+    });
   }
 
   if (curriculum.current_committee_step_id) {
