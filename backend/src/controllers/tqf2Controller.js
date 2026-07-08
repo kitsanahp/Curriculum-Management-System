@@ -179,7 +179,11 @@ exports.upload = async (req, res, next) => {
     if (!curriculum) return res.status(404).json({ success: false, message: 'ไม่พบหลักสูตร' });
 
     const FACULTY_UPLOADABLE = [CURRICULUM_STATUS.PENDING_DEPARTMENT, CURRICULUM_STATUS.REVISION];
-    const ADMIN_UPLOADABLE   = [CURRICULUM_STATUS.DEPARTMENT_SUBMITTED, CURRICULUM_STATUS.UNDER_COMMITTEE, CURRICULUM_STATUS.PENDING_ADMIN_RECHECK];
+    // admin อัปโหลดได้ทุกสถานะที่ยังไม่อนุมัติ — รวมสถานะรอภาควิชา (เกณฑ์เดียวกับ documentController)
+    const ADMIN_UPLOADABLE   = [
+      CURRICULUM_STATUS.PENDING_DEPARTMENT, CURRICULUM_STATUS.REVISION,
+      CURRICULUM_STATUS.DEPARTMENT_SUBMITTED, CURRICULUM_STATUS.UNDER_COMMITTEE, CURRICULUM_STATUS.PENDING_ADMIN_RECHECK,
+    ];
 
     if (req.user.role === ROLES.FACULTY || req.user.role === ROLES.STAFF) {
       const allowed = await canAccessCurriculum(req.user, {
@@ -191,17 +195,8 @@ exports.upload = async (req, res, next) => {
       }
     }
 
-    if (req.user.role === ROLES.ADMIN) {
-      if (!ADMIN_UPLOADABLE.includes(curriculum.status)) {
-        return res.status(403).json({ success: false, message: 'ไม่สามารถอัปโหลดได้ในขณะนี้' });
-      }
-      const count = await TQF2Document.count({ where: { curriculum_id, is_deleted: false } });
-      if (count === 0) {
-        return res.status(403).json({
-          success: false,
-          message: 'กรุณารอให้อาจารย์ผู้รับผิดชอบหลักสูตรอัปโหลดไฟล์ มคอ.2 ก่อน',
-        });
-      }
+    if (req.user.role === ROLES.ADMIN && !ADMIN_UPLOADABLE.includes(curriculum.status)) {
+      return res.status(403).json({ success: false, message: 'ไม่สามารถอัปโหลดได้ในขณะนี้' });
     }
     const { note, academic_year } = req.body;
     const ext = path.extname(req.file.originalname).toLowerCase().replace('.', '');
