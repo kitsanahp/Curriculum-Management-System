@@ -9,21 +9,22 @@ export default {
       // ── Typography Scale (6 ระดับเท่านั้น) ─────────────────────────────────
       // micro/caption สำหรับ metadata, body เป็น default
       fontSize: {
-        // legacy support (เก็บไว้ก่อน เพื่อไม่ break existing code)
-        'xs':   ['0.75rem',   { lineHeight: '1.125rem' }],   // 12 / 18
-        'sm':   ['0.875rem',  { lineHeight: '1.375rem' }],   // 14 / 22
+        // ขั้น xs/sm เลื่อนขึ้น +1px สำหรับตัวไทย Anuphan (feedback: ตัวหนังสือเล็กไป)
+        // ขั้น base ขึ้นไปคงเดิม เพื่อรักษา hierarchy ratio
+        'xs':   ['0.8125rem', { lineHeight: '1.1875rem' }],  // 13 / 19
+        'sm':   ['0.9375rem', { lineHeight: '1.4375rem' }],  // 15 / 23
         'base': ['1rem',      { lineHeight: '1.5rem' }],     // 16 / 24
         'lg':   ['1.125rem',  { lineHeight: '1.625rem' }],   // 18 / 26
         'xl':   ['1.25rem',   { lineHeight: '1.75rem' }],    // 20 / 28
         '2xl':  ['1.5rem',    { lineHeight: '2rem' }],       // 24 / 32 — display
         '3xl':  ['1.875rem',  { lineHeight: '2.375rem' }],   // 30 / 38
         '4xl':  ['2.25rem',   { lineHeight: '2.75rem' }],    // 36 / 44
-        // new semantic tokens
-        'micro':   ['0.6875rem', { lineHeight: '1rem' }],     // 11 / 16
-        'caption': ['0.75rem',   { lineHeight: '1.125rem' }], // 12 / 18
-        'body':    ['0.875rem',  { lineHeight: '1.375rem' }], // 14 / 22 — DEFAULT
-        'heading': ['1.125rem',  { lineHeight: '1.625rem' }], // 18 / 26
-        'display': ['1.5rem',    { lineHeight: '2rem' }],     // 24 / 32
+        // semantic tokens — ตามขั้น utility ที่เลื่อนแล้ว
+        'micro':   ['0.75rem',   { lineHeight: '1.0625rem' }], // 12 / 17
+        'caption': ['0.8125rem', { lineHeight: '1.1875rem' }], // 13 / 19
+        'body':    ['0.9375rem', { lineHeight: '1.4375rem' }], // 15 / 23 — DEFAULT
+        'heading': ['1.125rem',  { lineHeight: '1.625rem' }],  // 18 / 26
+        'display': ['1.5rem',    { lineHeight: '2rem' }],      // 24 / 32
       },
 
       // ── Border Radius (Sharper / Sleek Square UI) ────────────────────────

@@ -48,8 +48,8 @@
   --fw-extrabold: 800;   /* hero / display text */
 
   /* ── Typography: size scale (px → rem) ──────────────────────────────── */
-  --text-xs:   0.75rem;    /* 12px — timestamps, badges */
-  --text-sm:   0.875rem;   /* 14px — captions, helper text */
+  --text-xs:   0.8125rem;  /* 13px — timestamps, badges */
+  --text-sm:   0.9375rem;  /* 15px — captions, helper text */
   --text-base: 1rem;       /* 16px — body */
   --text-lg:   1.125rem;   /* 18px — lead paragraph */
   --text-xl:   1.25rem;    /* 20px — card headings */
