@@ -23,7 +23,16 @@ if (process.env.NODE_ENV === 'production') {
 app.use(compression());
 app.use(cookieParser());
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' } // อนุญาตให้ frontend โหลดรูปจาก /uploads ได้
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // อนุญาตให้ frontend โหลดรูปจาก /uploads ได้
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      // preview PDF ใช้ <iframe src="blob:..."> — default-src 'self' ไม่ครอบ blob:
+      // ถ้าไม่เปิด Chrome จะบล็อก iframe ("เนื้อหานี้ถูกบล็อก")
+      'frame-src': ["'self'", 'blob:'],
+      'img-src': ["'self'", 'data:', 'blob:'],
+    },
+  },
 }));
 
 // อนุญาต cross-origin จาก frontend เท่านั้น (กำหนดใน .env → FRONTEND_URL)
