@@ -96,28 +96,20 @@
       </div>
     </div>
 
-    <!-- Workflow action bar (decision zone) — Clean Card with Amber Ribbon Badge -->
+    <!-- Workflow action bar (decision zone) -->
     <div v-if="hasActions"
-      class="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 sm:px-5 lg:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
+      class="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 sm:px-5 lg:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
 
-        <!-- Context: Yellow Arrow Badge Style + Underneath Red Description -->
-        <div v-if="actionContext" class="flex flex-col items-start min-w-0">
-          <!-- Ribbon Badge (Thinner font, clean arrow tag) -->
-          <div class="inline-flex items-stretch rounded-lg overflow-hidden border border-amber-300 bg-white shadow-2xs">
-            <!-- Left Amber Box with Arrow -->
-            <div class="bg-amber-500 text-white font-medium text-xs pl-3 pr-4 py-1 flex items-center gap-1.5 shrink-0"
-                 style="clip-path: polygon(0% 0%, 88% 0%, 100% 50%, 88% 100%, 0% 100%); min-width: 88px; justify-content: center;">
-              <PhListChecks class="w-3.5 h-3.5 shrink-0" weight="bold" />
-              <span>ขั้นตอนถัดไป</span>
-            </div>
-            <!-- Right Box (Title) -->
-            <div class="bg-amber-50/80 text-amber-900 font-semibold text-xs sm:text-[13px] px-3 py-1 flex items-center">
-              <span>{{ actionContext.title }}</span>
-            </div>
+        <!-- Context: next-step indicator (badge + title inline, hint below) -->
+        <div v-if="actionContext" class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap min-w-0">
+            <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 shrink-0">
+              <PhListChecks class="w-3.5 h-3.5" weight="bold" aria-hidden="true" />
+              ขั้นตอนถัดไป
+            </span>
+            <p class="text-sm sm:text-[15px] font-bold text-gray-900">{{ actionContext.title }}</p>
           </div>
-
-          <!-- Subtitle hint underneath in red, thinner font -->
-          <p class="text-xs sm:text-[13px] font-normal text-red-500 leading-relaxed mt-1.5 min-w-0">
+          <p class="text-xs sm:text-[13px] text-gray-500 leading-relaxed mt-1 min-w-0">
             {{ actionContext.hint }}
           </p>
         </div>
@@ -132,7 +124,7 @@
             <button
               :disabled="submitting || !hasDocuments"
               @click="handleSubmit"
-              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhPaperPlaneTilt class="w-4 h-4" weight="bold" aria-hidden="true" />
               ส่งหลักสูตรเพื่อตรวจสอบ
             </button>
@@ -146,7 +138,7 @@
             <button
               :disabled="submitting || !hasDocuments"
               @click="handleResubmit"
-              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhPaperPlaneTilt class="w-4 h-4" weight="bold" aria-hidden="true" />
               ส่งให้งานหลักสูตรตรวจสอบ
             </button>
@@ -155,12 +147,12 @@
           <!-- Admin: ตรวจสอบครั้งแรก (department_submitted) -->
           <template v-if="authStore.isAdmin && c.status === 'department_submitted'">
             <button :disabled="submitting" @click="showRejectModal = true"
-              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 h-[44px] text-sm font-bold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 hover:ring-red-400 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 h-11 text-sm font-semibold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 hover:ring-red-400 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhArrowCounterClockwise class="w-4 h-4" weight="bold" aria-hidden="true" />
               ส่งกลับแก้ไข
             </button>
             <button :disabled="submitting" @click="handleApprove"
-              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhCheck class="w-4 h-4" weight="bold" aria-hidden="true" />
               นำเข้าที่ประชุมคณะกรรมการ
             </button>
@@ -169,12 +161,12 @@
           <!-- Admin: ตรวจสอบหลังคณะกรรมการตีกลับ (pending_admin_recheck) -->
           <template v-if="authStore.isAdmin && c.status === 'pending_admin_recheck'">
             <button :disabled="submitting" @click="showRecheckRejectModal = true"
-              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 h-[44px] text-sm font-bold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 hover:ring-red-400 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 h-11 text-sm font-semibold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 hover:ring-red-400 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhArrowCounterClockwise class="w-4 h-4" weight="bold" aria-hidden="true" />
               ส่งกลับแก้ไข
             </button>
             <button :disabled="submitting" @click="handleApproveRecheck"
-              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-[44px] text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
+              class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhCheck class="w-4 h-4" weight="bold" aria-hidden="true" />
               นำเข้าที่ประชุมคณะกรรมการ
             </button>
