@@ -6,7 +6,7 @@
       <!-- Unified Header -->
       <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/70">
         <span class="text-sm font-bold text-gray-900">สรุปภาพรวมหลักสูตร</span>
-        <FormSelect v-model="filterYear" :options="yearOptions" class="w-36 bg-white" />
+        <FormSelect v-model="filterYear" :options="yearOptions" class="w-44 bg-white" />
       </div>
 
       <div class="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">

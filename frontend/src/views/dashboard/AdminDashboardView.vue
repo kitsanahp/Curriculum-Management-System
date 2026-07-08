@@ -5,7 +5,7 @@
     <div class="bg-white rounded-2xl border border-gray-200/70 shadow-sm overflow-hidden">
       <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/70">
         <span class="text-sm font-bold text-gray-900">สรุปสถานะหลักสูตร</span>
-        <FormSelect v-model="selectedYear" :options="yearOptions" class="w-36" />
+        <FormSelect v-model="selectedYear" :options="yearOptions" class="w-44" />
       </div>
       <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-gray-100">
         <div v-for="i in 5" :key="i" class="px-5 py-4">
