@@ -190,10 +190,10 @@ exports.register = async (req, res, next) => {
       is_active: false
     });
 
-    // Notify system mailbox + all admins — fire-and-forget
-    // คำขอลงทะเบียนต้องเข้ากล่องเมลหลักของระบบเสมอ แม้ยังไม่มี admin ที่ active
+    // Notify all active admins — fire-and-forget
+    // เมลระบบ (noreply) เป็นผู้ส่งอย่างเดียว ไม่ใช่ผู้รับ — ผู้รับคือเจ้าหน้าที่คณะ (admin)
     const admins = await User.findAll({ where: { role: 'admin', is_active: true }, attributes: ['email'] });
-    const recipients = [...new Set([emailService.SYSTEM_EMAIL, ...admins.map(a => a.email).filter(Boolean)])];
+    const recipients = [...new Set(admins.map(a => a.email).filter(Boolean))];
     let departmentName = null;
     if (department_id) {
       const dept = await Department.findByPk(department_id, { attributes: ['name'] });
