@@ -202,13 +202,13 @@ exports.resubmitAfterRevision = async (req, res, next) => {
     });
 
     if (onBehalf) {
-      // เจ้าหน้าที่ดำเนินการแทนภาควิชา → แจ้งทีมหลักสูตรให้ทราบแทนการแจ้ง admin
+      // เจ้าหน้าที่เป็นผู้นำส่งเอง → แจ้งทีมหลักสูตรให้ทราบแทนการแจ้ง admin
       const teamUserIds = await resolveTeamUserIds(curriculum.team || []);
       if (teamUserIds.length > 0) {
         await Notification.bulkCreate(teamUserIds.map(user_id => ({
           user_id,
-          title: 'เจ้าหน้าที่ดำเนินการส่งหลักสูตรแทน',
-          message: `งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตร ${cName(curriculum)} กลับเข้าสู่ขั้นตอนการพิจารณาแทนภาควิชา`,
+          title: 'นำส่งหลักสูตรกลับเข้าสู่การพิจารณา',
+          message: `งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตร ${cName(curriculum)} กลับเข้าสู่ขั้นตอนการพิจารณาเรียบร้อยแล้ว`,
           type: 'info',
           curriculum_id: curriculum.id
         })));
@@ -218,7 +218,7 @@ exports.resubmitAfterRevision = async (req, res, next) => {
         emailService.sendSubmittedOnBehalf?.(teamEmails, curriculum)
           ?.catch(err => console.error('[Email] sendSubmittedOnBehalf failed:', err.message));
       }
-      return res.json({ success: true, message: 'ส่งแทนภาควิชาสำเร็จ' });
+      return res.json({ success: true, message: 'ส่งหลักสูตรสำเร็จ' });
     }
 
     // แจ้ง admin ทุกคน

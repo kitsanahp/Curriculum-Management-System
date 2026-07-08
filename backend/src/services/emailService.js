@@ -518,18 +518,18 @@ exports.sendDepartmentSubmitted = (adminEmails, curriculum, departmentName) => {
     html);
 };
 
-// ─── 2.1 เจ้าหน้าที่นำส่งหลักสูตรแทนภาควิชา → แจ้งทีมผู้รับผิดชอบ ──────────
+// ─── 2.1 งานหลักสูตรคณะเป็นผู้นำส่งหลักสูตรเอง → แจ้งทีมผู้รับผิดชอบ ────────
 
 exports.sendSubmittedOnBehalf = (emails, curriculum) => {
   const html = baseTemplate('submitted',
-    `${heroSection('นำส่งหลักสูตรแทนภาควิชา', 'งานหลักสูตรคณะวิทยาศาสตร์ดำเนินการแทนแล้ว', 'submitted')}
+    `${heroSection('นำส่งหลักสูตรแล้ว', 'งานหลักสูตรคณะวิทยาศาสตร์เป็นผู้ดำเนินการนำส่ง', 'submitted')}
      ${pGreeting("เรียน คณะผู้รับผิดชอบหลักสูตร")}
-     <p style="${pStyle}">งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตรของท่านเข้าสู่ขั้นตอนการตรวจสอบแทนภาควิชาเรียบร้อยแล้ว ท่านสามารถติดตามความคืบหน้าได้ในระบบ</p>
+     <p style="${pStyle}">งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตรของท่านเข้าสู่ขั้นตอนการตรวจสอบเรียบร้อยแล้ว ท่านสามารถติดตามความคืบหน้าได้ในระบบ</p>
      ${curriculumBlock(curriculum, { showDeadline: false })}
      ${ctaButton(`${APP_URL}/curricula`, 'ติดตามความคืบหน้าในระบบ')}`
   );
   return send(emails,
-    `[นำส่งแทนภาควิชา] ${curriculumName(curriculum)} ระดับ${DEGREE_LEVEL_TH[curriculum.degree_level] || ''}`,
+    `[นำส่งหลักสูตร] ${curriculumName(curriculum)} ระดับ${DEGREE_LEVEL_TH[curriculum.degree_level] || ''}`,
     html);
 };
 

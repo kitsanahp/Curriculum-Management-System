@@ -126,7 +126,7 @@
               @click="handleSubmit"
               class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhPaperPlaneTilt class="w-4 h-4" weight="bold" aria-hidden="true" />
-              {{ authStore.isAdmin ? 'ส่งหลักสูตรแทนภาควิชา' : 'ส่งหลักสูตรเพื่อตรวจสอบ' }}
+              ส่งหลักสูตรเพื่อตรวจสอบ
             </button>
           </span>
 
@@ -140,7 +140,7 @@
               @click="handleResubmit"
               class="shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 h-11 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-200 ease-ios">
               <PhPaperPlaneTilt class="w-4 h-4" weight="bold" aria-hidden="true" />
-              {{ authStore.isAdmin ? 'ส่งแทนภาควิชาเข้าขั้นตอนเดิม' : 'ส่งให้งานหลักสูตรตรวจสอบ' }}
+              {{ authStore.isAdmin ? 'ส่งกลับเข้าขั้นตอนการพิจารณา' : 'ส่งให้งานหลักสูตรตรวจสอบ' }}
             </button>
           </span>
 
@@ -1010,12 +1010,12 @@ const getActionLabel = (log) => {
     case 'UPLOAD_TQF2':              return 'อัปโหลดเอกสาร ร่างหลักสูตร (มคอ.2)';
     case 'DELETE_DOCUMENT':          return 'ลบเอกสาร';
     case 'DELETE_TQF2':              return 'ลบเอกสาร ร่างหลักสูตร (มคอ.2)';
-    case 'DEPARTMENT_SUBMIT':        return log.details?.on_behalf ? 'เจ้าหน้าที่นำส่งหลักสูตรแทนภาควิชา' : 'ส่งหลักสูตรเพื่อตรวจสอบ';
+    case 'DEPARTMENT_SUBMIT':        return 'ส่งหลักสูตรเพื่อตรวจสอบ';
     case 'ADMIN_APPROVE':            return 'ผ่านการตรวจสอบ เข้าสู่กระบวนการคณะกรรมการ';
     case 'ADMIN_REJECT':             return 'งานหลักสูตรคณะส่งกลับแก้ไข';
     case 'COMMITTEE_APPROVED':       return c ? `${c} เห็นชอบ` : 'คณะกรรมการเห็นชอบ';
     case 'COMMITTEE_REVISION':       return c ? `${c} ส่งกลับแก้ไข` : 'คณะกรรมการส่งกลับแก้ไข';
-    case 'RESUBMIT_AFTER_REVISION':  return log.details?.on_behalf ? 'เจ้าหน้าที่นำส่งแทนภาควิชา หลังคณะกรรมการตีกลับ' : 'ส่งให้งานหลักสูตรตรวจสอบ หลังคณะกรรมการตีกลับ';
+    case 'RESUBMIT_AFTER_REVISION':  return 'ส่งให้งานหลักสูตรตรวจสอบ หลังคณะกรรมการตีกลับ';
     case 'ADMIN_APPROVE_RECHECK':    return 'งานหลักสูตรอนุมัติ ส่งคืนคณะกรรมการ';
     case 'ADMIN_REJECT_RECHECK':     return 'งานหลักสูตรส่งกลับแก้ไขเพิ่มเติม';
     default:                         return log.action;
@@ -1166,11 +1166,11 @@ const actionContext = computed(() => {
     if (status === 'pending_admin_recheck')
       return { title: 'ตรวจสอบเอกสารที่ปรับแก้', hint: 'โปรดตรวจสอบเอกสารที่ภาควิชาปรับแก้เพิ่มเติม และพิจารณาดำเนินการในขั้นตอนต่อไป' };
     if (status === 'pending_department')
-      return { title: 'รอภาควิชาดำเนินการ', hint: 'กรณีเร่งด่วนหรือภาควิชาไม่ดำเนินการในระบบ เจ้าหน้าที่สามารถอัปโหลดเอกสารและนำส่งหลักสูตรแทนภาควิชาได้' };
+      return { title: 'รอภาควิชาดำเนินการ', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถอัปโหลดเอกสารและนำส่งหลักสูตรเพื่อดำเนินการในขั้นตอนต่อไปได้' };
     if (status === 'revision' && !c.value.current_committee_step_id)
-      return { title: 'รอภาควิชาปรับแก้เอกสาร', hint: 'กรณีเร่งด่วนหรือภาควิชาไม่ดำเนินการในระบบ เจ้าหน้าที่สามารถปรับแก้เอกสารและนำส่งหลักสูตรแทนภาควิชาได้' };
+      return { title: 'รอภาควิชาปรับแก้เอกสาร', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถปรับแก้เอกสารและนำส่งหลักสูตรเพื่อดำเนินการในขั้นตอนต่อไปได้' };
     if (status === 'revision' && c.value.current_committee_step_id)
-      return { title: 'รอภาควิชาปรับแก้ตามมติคณะกรรมการ', hint: 'กรณีเร่งด่วนหรือภาควิชาไม่ดำเนินการในระบบ เจ้าหน้าที่สามารถปรับแก้เอกสารและนำส่งแทนภาควิชา เพื่อกลับเข้าสู่ขั้นตอนการพิจารณาเดิมได้' };
+      return { title: 'รอภาควิชาปรับแก้ตามมติคณะกรรมการ', hint: 'กรณีจำเป็นเร่งด่วน เจ้าหน้าที่สามารถปรับแก้เอกสารและนำส่งหลักสูตรกลับเข้าสู่ขั้นตอนการพิจารณาเดิมได้' };
   }
   return null;
 });
@@ -1192,13 +1192,13 @@ watch(activeTab, (tab) => {
 const submitting = ref(false);
 
 const handleSubmit = async () => {
-  const onBehalf = authStore.isAdmin;
+  const byAdmin = authStore.isAdmin;
   const ok = await confirm({
-    title: onBehalf ? 'ส่งหลักสูตรแทนภาควิชา' : 'ส่งหลักสูตรเพื่อตรวจสอบ',
-    message: onBehalf
-      ? 'ระบบจะนำส่งหลักสูตรเข้าสู่ขั้นตอนการตรวจสอบแทนภาควิชา และแจ้งให้ทีมหลักสูตรทราบ'
+    title: 'ส่งหลักสูตรเพื่อตรวจสอบ',
+    message: byAdmin
+      ? 'ระบบจะนำส่งหลักสูตรเข้าสู่ขั้นตอนการตรวจสอบ และแจ้งให้ทีมหลักสูตรทราบ'
       : 'ระบบจะนำส่งหลักสูตรให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบต่อไป',
-    confirmLabel: onBehalf ? 'ส่งแทนภาควิชา' : 'ส่งหลักสูตร',
+    confirmLabel: 'ส่งหลักสูตร',
     type: 'primary',
   });
   if (!ok || submitting.value) return;
@@ -1206,10 +1206,7 @@ const handleSubmit = async () => {
   try {
     await curriculumStore.submitByDepartment(route.params.id);
     loadHistory();
-    toast.success(
-      onBehalf ? 'ส่งแทนภาควิชาเรียบร้อยแล้ว' : 'ส่งหลักสูตรเรียบร้อยแล้ว',
-      onBehalf ? 'แจ้งทีมหลักสูตรให้ทราบแล้ว' : 'รอเจ้าหน้าที่ตรวจสอบ'
-    );
+    toast.success('ส่งหลักสูตรเรียบร้อยแล้ว', byAdmin ? 'แจ้งทีมหลักสูตรให้ทราบแล้ว' : 'รอเจ้าหน้าที่ตรวจสอบ');
   } catch {
     toast.error('ส่งหลักสูตรไม่สำเร็จ', 'กรุณาลองใหม่อีกครั้ง');
   } finally { submitting.value = false; }
@@ -1251,13 +1248,13 @@ const handleReject = async () => {
 
 const handleResubmit = async () => {
   if (submitting.value) return;
-  const onBehalf = authStore.isAdmin;
+  const byAdmin = authStore.isAdmin;
   const ok = await confirm({
-    title: onBehalf ? 'ส่งแทนภาควิชาเข้าขั้นตอนเดิม' : 'ส่งให้งานหลักสูตรตรวจสอบ',
-    message: onBehalf
-      ? 'ระบบจะนำส่งหลักสูตรกลับเข้าสู่ขั้นตอนการพิจารณาแทนภาควิชา และแจ้งให้ทีมหลักสูตรทราบ'
+    title: byAdmin ? 'ส่งกลับเข้าขั้นตอนการพิจารณา' : 'ส่งให้งานหลักสูตรตรวจสอบ',
+    message: byAdmin
+      ? 'ระบบจะนำส่งหลักสูตรกลับเข้าสู่ขั้นตอนการพิจารณา และแจ้งให้ทีมหลักสูตรทราบ'
       : 'ระบบจะส่งหลักสูตรกลับให้งานหลักสูตรคณะวิทยาศาสตร์พิจารณาตรวจสอบอีกครั้ง',
-    confirmLabel: onBehalf ? 'ส่งแทนภาควิชา' : 'ส่งให้ตรวจสอบ',
+    confirmLabel: byAdmin ? 'ยืนยันการส่ง' : 'ส่งให้ตรวจสอบ',
     type: 'primary',
   });
   if (!ok) return;
@@ -1265,7 +1262,7 @@ const handleResubmit = async () => {
   try {
     await curriculumStore.resubmitAfterRevision(route.params.id);
     loadHistory();
-    toast.success(onBehalf ? 'ส่งแทนภาควิชาเรียบร้อยแล้ว' : 'ส่งให้งานหลักสูตรตรวจสอบเรียบร้อยแล้ว');
+    toast.success('ส่งหลักสูตรเรียบร้อยแล้ว', byAdmin ? 'แจ้งทีมหลักสูตรให้ทราบแล้ว' : undefined);
   } catch {
     toast.error('ส่งไม่สำเร็จ', 'กรุณาลองใหม่อีกครั้ง');
   } finally { submitting.value = false; }

@@ -339,10 +339,10 @@ async function submitByDepartment(curriculum, actor) {
   });
 
   if (onBehalf) {
-    // เจ้าหน้าที่ดำเนินการแทนภาควิชา → แจ้งทีมหลักสูตรให้ทราบ (ไม่แจ้ง admin ซึ่งเป็นฝั่งผู้ทำเอง)
+    // เจ้าหน้าที่เป็นผู้นำส่งเอง → แจ้งทีมหลักสูตรให้ทราบ (ไม่แจ้ง admin ซึ่งเป็นฝั่งผู้ทำเอง)
     await notifyTeam(curriculum, {
-      title: 'เจ้าหน้าที่ดำเนินการส่งหลักสูตรแทน',
-      message: `งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตร ${cName(curriculum)} เข้าสู่ขั้นตอนการตรวจสอบแทนภาควิชา`,
+      title: 'นำส่งหลักสูตรเข้าสู่การตรวจสอบ',
+      message: `งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตร ${cName(curriculum)} เข้าสู่ขั้นตอนการตรวจสอบเรียบร้อยแล้ว`,
       type: 'info',
     });
     const emails = await resolveTeamEmails(curriculum.team || []);
