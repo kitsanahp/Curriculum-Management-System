@@ -4,7 +4,7 @@ const { loadAuthorizedCurriculum } = require('../utils/curriculumAccess');
 const curriculumService = require('../services/curriculumService');
 
 // ข้อมูลผู้กระทำที่ service ต้องใช้ (audit + อีเมลผู้สร้าง)
-const actorFrom = (req) => ({ id: req.user.id, email: req.user.email, ip: req.ip });
+const actorFrom = (req) => ({ id: req.user.id, email: req.user.email, role: req.user.role, ip: req.ip });
 
 // include สำหรับหน้ารายละเอียด (โหลด team + steps + จำนวนเอกสารครบ)
 const DETAIL_INCLUDE = [

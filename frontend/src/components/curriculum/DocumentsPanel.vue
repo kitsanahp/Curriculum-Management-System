@@ -305,13 +305,14 @@ const isDragging = ref(false);
 const previewState = ref(null);
 
 const FACULTY_UPLOADABLE = ['pending_department', 'revision'];
-const ADMIN_UPLOADABLE   = ['department_submitted', 'under_committee', 'pending_admin_recheck'];
+// admin อัปโหลดได้ทุกสถานะก่อนอนุมัติ — รวมสถานะรอภาควิชา เพื่อดำเนินการแทนกรณีภาควิชาล่าช้า
+const ADMIN_UPLOADABLE   = ['pending_department', 'revision', 'department_submitted', 'under_committee', 'pending_admin_recheck'];
 const canUpload = computed(() => {
  const role = authStore.user?.role;
  const status = props.curriculum?.status;
  // staff อัปโหลดได้เหมือนอาจารย์ (ช่วงภาควิชาเตรียม/แก้ไขเอกสาร)
  if (role === 'faculty' || role === 'staff') return FACULTY_UPLOADABLE.includes(status);
- if (role === 'admin') return ADMIN_UPLOADABLE.includes(status) && documents.value.length > 0;
+ if (role === 'admin') return ADMIN_UPLOADABLE.includes(status);
  return false;
 });
 const canDelete = computed(() => ['admin', 'faculty', 'staff'].includes(authStore.user?.role));

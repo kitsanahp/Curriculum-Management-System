@@ -190,15 +190,36 @@ exports.resubmitAfterRevision = async (req, res, next) => {
     }
 
     // ส่งไปรอตรวจสอบจากงานหลักสูตรก่อน — ยังไม่รีเซ็ต step จนกว่า admin จะอนุมัติ
+    const onBehalf = req.user.role === ROLES.ADMIN;
     curriculum.status = CURRICULUM_STATUS.PENDING_ADMIN_RECHECK;
     await curriculum.save();
 
     await AuditLog.create({
       curriculum_id: curriculum.id, user_id: req.user.id,
       action: 'RESUBMIT_AFTER_REVISION',
-      details: { resume_step_id: curriculum.current_committee_step_id },
+      details: { resume_step_id: curriculum.current_committee_step_id, ...(onBehalf ? { on_behalf: true } : {}) },
       ip_address: req.ip
     });
+
+    if (onBehalf) {
+      // เจ้าหน้าที่ดำเนินการแทนภาควิชา → แจ้งทีมหลักสูตรให้ทราบแทนการแจ้ง admin
+      const teamUserIds = await resolveTeamUserIds(curriculum.team || []);
+      if (teamUserIds.length > 0) {
+        await Notification.bulkCreate(teamUserIds.map(user_id => ({
+          user_id,
+          title: 'เจ้าหน้าที่ดำเนินการส่งหลักสูตรแทน',
+          message: `งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตร ${cName(curriculum)} กลับเข้าสู่ขั้นตอนการพิจารณาแทนภาควิชา`,
+          type: 'info',
+          curriculum_id: curriculum.id
+        })));
+      }
+      const teamEmails = await resolveTeamEmails(curriculum.team || []);
+      if (teamEmails.length > 0) {
+        emailService.sendSubmittedOnBehalf?.(teamEmails, curriculum)
+          ?.catch(err => console.error('[Email] sendSubmittedOnBehalf failed:', err.message));
+      }
+      return res.json({ success: true, message: 'ส่งแทนภาควิชาสำเร็จ' });
+    }
 
     // แจ้ง admin ทุกคน
     const admins = await User.findAll({ where: { role: ROLES.ADMIN, is_active: true }, attributes: ['id', 'email'] });

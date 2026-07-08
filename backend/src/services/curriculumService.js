@@ -330,9 +330,28 @@ async function submitByDepartment(curriculum, actor) {
     throw new ApiError(409, 'หลักสูตรนี้ถูกตีกลับจากคณะกรรมการ ต้องส่งผ่าน "ส่งให้งานหลักสูตรตรวจสอบ" เพื่อกลับเข้าขั้นตอนเดิม');
   }
 
+  const onBehalf = actor.role === ROLES.ADMIN;
   curriculum.status = CURRICULUM_STATUS.DEPARTMENT_SUBMITTED;
   await curriculum.save();
-  await writeAudit({ curriculumId: curriculum.id, actor, action: 'DEPARTMENT_SUBMIT' });
+  await writeAudit({
+    curriculumId: curriculum.id, actor, action: 'DEPARTMENT_SUBMIT',
+    details: onBehalf ? { on_behalf: true } : undefined,
+  });
+
+  if (onBehalf) {
+    // เจ้าหน้าที่ดำเนินการแทนภาควิชา → แจ้งทีมหลักสูตรให้ทราบ (ไม่แจ้ง admin ซึ่งเป็นฝั่งผู้ทำเอง)
+    await notifyTeam(curriculum, {
+      title: 'เจ้าหน้าที่ดำเนินการส่งหลักสูตรแทน',
+      message: `งานหลักสูตรคณะวิทยาศาสตร์ได้นำส่งหลักสูตร ${cName(curriculum)} เข้าสู่ขั้นตอนการตรวจสอบแทนภาควิชา`,
+      type: 'info',
+    });
+    const emails = await resolveTeamEmails(curriculum.team || []);
+    if (emails.length > 0) {
+      fireEmail('sendSubmittedOnBehalf',
+        emailService.sendSubmittedOnBehalf?.(emails, curriculum));
+    }
+    return;
+  }
 
   const admins = await User.findAll({
     where: { role: ROLES.ADMIN, is_active: true }, attributes: ['id', 'email'],
